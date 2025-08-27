@@ -128,7 +128,7 @@ const HeroSection = () => {
           </div>
 
           {/* Right Column - Contact Form */}
-          <div className="lg:justify-self-end w-full max-w-lg hidden md:block">
+          <div className="lg:justify-self-end w-full max-w-lg hidden lg:block">
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
               {/* Form Header */}
               <div className="text-center mb-8">

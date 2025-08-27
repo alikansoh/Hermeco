@@ -46,6 +46,30 @@ const Navbar = () => {
     setMobileDropdownOpen(!mobileDropdownOpen);
   };
 
+  // Smooth scroll function
+  const handleSmoothScroll = (e, href) => {
+    // Check if it's an anchor link (starts with #)
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const targetId = href.substring(1);
+      const targetElement = document.getElementById(targetId);
+      
+      if (targetElement) {
+        const navHeight = 120; // Adjust based on your navbar height
+        const targetPosition = targetElement.offsetTop - navHeight;
+        
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+        
+        // Close mobile menu if open
+        setIsOpen(false);
+        setMobileDropdownOpen(false);
+      }
+    }
+  };
+
   // Function to check if link is active
   const isActiveLink = (href) => {
     if (href === "/") {
@@ -156,6 +180,7 @@ const Navbar = () => {
                   <div key={item.name} className="relative group">
                     <Link
                       href={item.href}
+                      onClick={(e) => handleSmoothScroll(e, item.href)}
                       className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-all duration-300 rounded-lg ${
                         isActive
                           ? "text-yellow-600 bg-yellow-50 shadow-sm"
@@ -180,6 +205,7 @@ const Navbar = () => {
                               <Link
                                 key={index}
                                 href={service.href}
+                                onClick={(e) => handleSmoothScroll(e, service.href)}
                                 className={`flex items-center gap-3 p-2 text-sm rounded-lg transition-all duration-200 ${
                                   isServiceActive
                                     ? "text-yellow-600 bg-yellow-50"
@@ -203,6 +229,7 @@ const Navbar = () => {
             <div className="flex items-center gap-4">
               <Link
                 href="/quote"
+                onClick={(e) => handleSmoothScroll(e, "/quote")}
                 className={`hidden md:flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 ${
                   isActiveLink("/quote")
                     ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
@@ -245,16 +272,16 @@ const Navbar = () => {
                 <div key={item.name}>
                   {item.hasDropdown ? (
                     // Services with dropdown button
-                    <div>
+                    <div className="relative">
                       <div className="flex items-center justify-between">
                         <Link
                           href={item.href}
+                          onClick={(e) => handleSmoothScroll(e, item.href)}
                           className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex-1 ${
                             isActive
                               ? "text-yellow-600 bg-yellow-50"
                               : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
                           }`}
-                          onClick={() => setIsOpen(false)}
                         >
                           <Icon className="h-5 w-5" />
                           {item.name}
@@ -275,50 +302,43 @@ const Navbar = () => {
                         </button>
                       </div>
                       
-                      {/* Mobile Services Dropdown */}
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          mobileDropdownOpen
-                            ? "max-h-96 opacity-100"
-                            : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="ml-4 pl-4 border-l border-yellow-200 space-y-2 mt-2">
-                          {services.map((service, index) => {
-                            const ServiceIcon = service.icon;
-                            const isServiceActive = isActiveLink(service.href);
-                            return (
-                              <Link
-                                key={index}
-                                href={service.href}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isServiceActive
-                                    ? "text-yellow-600 bg-yellow-50 font-medium"
-                                    : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
-                                }`}
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  setMobileDropdownOpen(false);
-                                }}
-                              >
-                                <ServiceIcon className="h-4 w-4" />
-                                {service.name}
-                              </Link>
-                            );
-                          })}
+                      {/* Mobile Services Dropdown - Overlay */}
+                      {mobileDropdownOpen && (
+                        <div className="absolute left-0 right-0 top-full bg-white border-t border-gray-100 shadow-lg z-10">
+                          <div className="px-4 py-3 space-y-2">
+                            {services.map((service, index) => {
+                              const ServiceIcon = service.icon;
+                              const isServiceActive = isActiveLink(service.href);
+                              return (
+                                <Link
+                                  key={index}
+                                  href={service.href}
+                                  onClick={(e) => handleSmoothScroll(e, service.href)}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                    isServiceActive
+                                      ? "text-yellow-600 bg-yellow-50 font-medium"
+                                      : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
+                                  }`}
+                                >
+                                  <ServiceIcon className="h-4 w-4" />
+                                  {service.name}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   ) : (
                     // Regular navigation items
                     <Link
                       href={item.href}
+                      onClick={(e) => handleSmoothScroll(e, item.href)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
                         isActive
                           ? "text-yellow-600 bg-yellow-50"
                           : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
                       }`}
-                      onClick={() => setIsOpen(false)}
                     >
                       <Icon className="h-5 w-5" />
                       {item.name}
@@ -332,12 +352,12 @@ const Navbar = () => {
             <div className="pt-4">
               <Link
                 href="/quote"
+                onClick={(e) => handleSmoothScroll(e, "/quote")}
                 className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 ${
                   isActiveLink("/quote")
                     ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
                     : "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
                 }`}
-                onClick={() => setIsOpen(false)}
               >
                 <FileText className="h-5 w-5" />
                 Get Free Quote
