@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   Menu,
   X,
@@ -14,6 +15,7 @@ import {
   Users,
   FileText,
   ChevronDown,
+  ChevronRight,
   Ruler,
   Plug,
   Trees,
@@ -26,6 +28,8 @@ import {
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -33,7 +37,27 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const toggleMenu = () => setIsOpen(!isOpen);
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+    setMobileDropdownOpen(false); // Close dropdown when main menu toggles
+  };
+
+  const toggleMobileDropdown = () => {
+    setMobileDropdownOpen(!mobileDropdownOpen);
+  };
+
+  // Function to check if link is active
+  const isActiveLink = (href) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
+
+  // Function to check if any service link is active
+  const isServicesActive = () => {
+    return services.some(service => pathname.startsWith(service.href));
+  };
 
   const navItems = [
     { name: "Home", href: "/", icon: Building },
@@ -75,7 +99,6 @@ const Navbar = () => {
       href: "/services/landscaping",
     },
   ];
-  
 
   return (
     <>
@@ -125,11 +148,19 @@ const Navbar = () => {
             <div className="hidden lg:flex items-center space-x-6">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = item.hasDropdown 
+                  ? isActiveLink(item.href) || isServicesActive()
+                  : isActiveLink(item.href);
+                
                 return (
                   <div key={item.name} className="relative group">
                     <Link
                       href={item.href}
-                      className="flex items-center gap-2 text-gray-700 hover:text-yellow-600 px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-all duration-300 rounded-lg hover:bg-yellow-50"
+                      className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-all duration-300 rounded-lg ${
+                        isActive
+                          ? "text-yellow-600 bg-yellow-50 shadow-sm"
+                          : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                      }`}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{item.name}</span>
@@ -144,11 +175,16 @@ const Navbar = () => {
                         <div className="p-4 grid gap-2">
                           {services.map((service, index) => {
                             const ServiceIcon = service.icon;
+                            const isServiceActive = isActiveLink(service.href);
                             return (
                               <Link
                                 key={index}
                                 href={service.href}
-                                className="flex items-center gap-3 text-gray-600 hover:text-yellow-600 p-2 text-sm rounded-lg transition-all duration-200 hover:bg-yellow-50"
+                                className={`flex items-center gap-3 p-2 text-sm rounded-lg transition-all duration-200 ${
+                                  isServiceActive
+                                    ? "text-yellow-600 bg-yellow-50"
+                                    : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
+                                }`}
                               >
                                 <ServiceIcon className="h-4 w-4" />
                                 <span>{service.name}</span>
@@ -167,7 +203,11 @@ const Navbar = () => {
             <div className="flex items-center gap-4">
               <Link
                 href="/quote"
-                className="hidden md:flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105"
+                className={`hidden md:flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 ${
+                  isActiveLink("/quote")
+                    ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
+                    : "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
+                }`}
               >
                 <FileText className="h-5 w-5" />
                 <span>Free Quote</span>
@@ -197,33 +237,92 @@ const Navbar = () => {
           <div className="px-4 py-6 space-y-3 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = item.hasDropdown 
+                ? isActiveLink(item.href) || isServicesActive()
+                : isActiveLink(item.href);
+
               return (
                 <div key={item.name}>
-                  <Link
-                    href={item.href}
-                    className="flex items-center gap-3 text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.name}
-                  </Link>
-                  {item.hasDropdown && (
-                    <div className="ml-4 pl-4 border-l border-yellow-200 space-y-2 mt-2">
-                      {services.map((service, index) => {
-                        const ServiceIcon = service.icon;
-                        return (
-                          <Link
-                            key={index}
-                            href={service.href}
-                            className="flex items-center gap-2 text-gray-600 hover:text-yellow-600 px-3 py-2 rounded-lg text-sm hover:bg-yellow-50"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <ServiceIcon className="h-4 w-4" />
-                            {service.name}
-                          </Link>
-                        );
-                      })}
+                  {item.hasDropdown ? (
+                    // Services with dropdown button
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <Link
+                          href={item.href}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex-1 ${
+                            isActive
+                              ? "text-yellow-600 bg-yellow-50"
+                              : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                          }`}
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <Icon className="h-5 w-5" />
+                          {item.name}
+                        </Link>
+                        <button
+                          onClick={toggleMobileDropdown}
+                          className={`p-2 rounded-lg transition-all duration-300 ${
+                            mobileDropdownOpen
+                              ? "text-yellow-600 bg-yellow-50"
+                              : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                          }`}
+                        >
+                          <ChevronRight 
+                            className={`h-5 w-5 transition-transform duration-300 ${
+                              mobileDropdownOpen ? "rotate-90" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      
+                      {/* Mobile Services Dropdown */}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${
+                          mobileDropdownOpen
+                            ? "max-h-96 opacity-100"
+                            : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <div className="ml-4 pl-4 border-l border-yellow-200 space-y-2 mt-2">
+                          {services.map((service, index) => {
+                            const ServiceIcon = service.icon;
+                            const isServiceActive = isActiveLink(service.href);
+                            return (
+                              <Link
+                                key={index}
+                                href={service.href}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isServiceActive
+                                    ? "text-yellow-600 bg-yellow-50 font-medium"
+                                    : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
+                                }`}
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  setMobileDropdownOpen(false);
+                                }}
+                              >
+                                <ServiceIcon className="h-4 w-4" />
+                                {service.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
+                  ) : (
+                    // Regular navigation items
+                    <Link
+                      href={item.href}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
+                        isActive
+                          ? "text-yellow-600 bg-yellow-50"
+                          : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                      }`}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.name}
+                    </Link>
                   )}
                 </div>
               );
@@ -233,7 +332,11 @@ const Navbar = () => {
             <div className="pt-4">
               <Link
                 href="/quote"
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105"
+                className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 ${
+                  isActiveLink("/quote")
+                    ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
+                    : "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
+                }`}
                 onClick={() => setIsOpen(false)}
               >
                 <FileText className="h-5 w-5" />
