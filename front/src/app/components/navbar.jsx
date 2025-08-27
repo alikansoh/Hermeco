@@ -103,7 +103,7 @@ const Navbar = () => {
 
       {/* Main Navbar */}
       <nav
-        className={`relative sticky top-0 z-50 transition-all duration-500 ${
+        className={`relative  top-0 z-50 transition-all duration-500 ${
           isScrolled
             ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
             : "bg-white shadow-md"
@@ -295,7 +295,7 @@ const Navbar = () => {
               })}
 
               {/* Mobile CTA */}
-              <div className="pt-4">
+              <div className="pt-4  mb-7">
                 <Link
                   href="/quote"
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
