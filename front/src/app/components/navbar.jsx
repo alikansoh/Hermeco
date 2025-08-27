@@ -17,12 +17,11 @@ import {
   ChevronDown,
   ChevronRight,
   Ruler,
-  Plug,
-  Trees,
-  Paintbrush,
-  Flower2,
   Zap,
   Droplets,
+  Paintbrush,
+  Flower2,
+  Trees,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -37,26 +36,30 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setMobileDropdownOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const toggleMenu = () => {
     setIsOpen(!isOpen);
-    setMobileDropdownOpen(false); // Close dropdown when main menu toggles
+    setMobileDropdownOpen(false);
   };
 
   const toggleMobileDropdown = () => {
     setMobileDropdownOpen(!mobileDropdownOpen);
   };
 
-  // Function to check if link is active
   const isActiveLink = (href) => {
-    if (href === "/") {
-      return pathname === "/";
-    }
+    if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
-  // Function to check if any service link is active
   const isServicesActive = () => {
-    return services.some(service => pathname.startsWith(service.href));
+    return services.some((service) => pathname.startsWith(service.href));
   };
 
   const navItems = [
@@ -68,36 +71,12 @@ const Navbar = () => {
   ];
 
   const services = [
-    {
-      name: "Renovations & Remodeling",
-      icon: Ruler,
-      href: "/services/renovations",
-    },
-    {
-      name: "Electrical Services",
-      icon: Zap,
-      href: "/services/electrical",
-    },
-    {
-      name: "Plumbing Services",
-      icon: Droplets,
-      href: "/services/plumbing",
-    },
-    {
-      name: "Decorations & Painting",
-      icon: Paintbrush,
-      href: "/services/painting",
-    },
-    {
-      name: "Gardening",
-      icon: Flower2,
-      href: "/services/gardening",
-    },
-    {
-      name: "Landscaping",
-      icon: Trees,
-      href: "/services/landscaping",
-    },
+    { name: "Renovations & Remodeling", icon: Ruler, href: "/services/renovations" },
+    { name: "Electrical Services", icon: Zap, href: "/services/electrical" },
+    { name: "Plumbing Services", icon: Droplets, href: "/services/plumbing" },
+    { name: "Decorations & Painting", icon: Paintbrush, href: "/services/painting" },
+    { name: "Gardening", icon: Flower2, href: "/services/gardening" },
+    { name: "Landscaping", icon: Trees, href: "/services/landscaping" },
   ];
 
   return (
@@ -124,7 +103,7 @@ const Navbar = () => {
 
       {/* Main Navbar */}
       <nav
-        className={`sticky top-0 z-50 transition-all duration-500 ${
+        className={`relative sticky top-0 z-50 transition-all duration-500 ${
           isScrolled
             ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
             : "bg-white shadow-md"
@@ -148,10 +127,10 @@ const Navbar = () => {
             <div className="hidden lg:flex items-center space-x-6">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = item.hasDropdown 
+                const isActive = item.hasDropdown
                   ? isActiveLink(item.href) || isServicesActive()
                   : isActiveLink(item.href);
-                
+
                 return (
                   <div key={item.name} className="relative group">
                     <Link
@@ -169,7 +148,7 @@ const Navbar = () => {
                       )}
                     </Link>
 
-                    {/* Dropdown */}
+                    {/* Desktop Dropdown */}
                     {item.hasDropdown && (
                       <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-yellow-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-60">
                         <div className="p-4 grid gap-2">
@@ -216,145 +195,124 @@ const Navbar = () => {
                 onClick={toggleMenu}
                 className="lg:hidden p-3 rounded-lg text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 border border-gray-200 transition-all z-50 relative"
               >
-                {isOpen ? (
-                  <X className="h-6 w-6" />
-                ) : (
-                  <Menu className="h-6 w-6" />
-                )}
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Menu - Now positioned absolutely with z-index */}
-        <div
-          className={`lg:hidden fixed left-0 right-0 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 shadow-xl transition-all duration-300 ease-in-out z-40 ${
-            isOpen
-              ? "opacity-100 visible translate-y-0"
-              : "opacity-0 invisible -translate-y-4"
-          }`}
-          style={{ top: isScrolled ? '120px' : '150px' }} // Positioned slightly higher
-        >
-          <div className="px-4 py-6 space-y-3 max-h-[calc(100vh-140px)] overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.hasDropdown 
-                ? isActiveLink(item.href) || isServicesActive()
-                : isActiveLink(item.href);
+        {/* Mobile Menu */}
+        {isOpen && (
+          <div className="lg:hidden absolute left-0 right-0 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 shadow-xl z-40 transition-all duration-300">
+            <div className="px-4 py-6 space-y-3 max-h-[80vh] overflow-y-auto">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = item.hasDropdown
+                  ? isActiveLink(item.href) || isServicesActive()
+                  : isActiveLink(item.href);
 
-              return (
-                <div key={item.name}>
-                  {item.hasDropdown ? (
-                    // Services with dropdown button
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <Link
-                          href={item.href}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex-1 ${
-                            isActive
-                              ? "text-yellow-600 bg-yellow-50"
-                              : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
-                          }`}
-                          onClick={() => setIsOpen(false)}
-                        >
-                          <Icon className="h-5 w-5" />
-                          {item.name}
-                        </Link>
-                        <button
-                          onClick={toggleMobileDropdown}
-                          className={`p-2 rounded-lg transition-all duration-300 ${
-                            mobileDropdownOpen
-                              ? "text-yellow-600 bg-yellow-50"
-                              : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
-                          }`}
-                        >
-                          <ChevronRight 
-                            className={`h-5 w-5 transition-transform duration-300 ${
-                              mobileDropdownOpen ? "rotate-90" : ""
+                return (
+                  <div key={item.name}>
+                    {item.hasDropdown ? (
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <Link
+                            href={item.href}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 flex-1 ${
+                              isActive
+                                ? "text-yellow-600 bg-yellow-50"
+                                : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
                             }`}
-                          />
-                        </button>
-                      </div>
-                      
-                      {/* Mobile Services Dropdown */}
-                      <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                          mobileDropdownOpen
-                            ? "max-h-96 opacity-100"
-                            : "max-h-0 opacity-0"
-                        }`}
-                      >
-                        <div className="ml-4 pl-4 border-l border-yellow-200 space-y-2 mt-2">
-                          {services.map((service, index) => {
-                            const ServiceIcon = service.icon;
-                            const isServiceActive = isActiveLink(service.href);
-                            return (
-                              <Link
-                                key={index}
-                                href={service.href}
-                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                  isServiceActive
-                                    ? "text-yellow-600 bg-yellow-50 font-medium"
-                                    : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
-                                }`}
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  setMobileDropdownOpen(false);
-                                }}
-                              >
-                                <ServiceIcon className="h-4 w-4" />
-                                {service.name}
-                              </Link>
-                            );
-                          })}
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <Icon className="h-5 w-5" />
+                            {item.name}
+                          </Link>
+                          <button
+                            onClick={toggleMobileDropdown}
+                            className={`p-2 rounded-lg transition-all duration-300 ${
+                              mobileDropdownOpen
+                                ? "text-yellow-600 bg-yellow-50"
+                                : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                            }`}
+                          >
+                            <ChevronRight
+                              className={`h-5 w-5 transition-transform duration-300 ${
+                                mobileDropdownOpen ? "rotate-90" : ""
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Mobile Dropdown */}
+                        <div
+                          className={`overflow-hidden transition-all duration-300 ${
+                            mobileDropdownOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                          }`}
+                        >
+                          <div className="ml-4 pl-4 border-l border-yellow-200 space-y-2 mt-2">
+                            {services.map((service, index) => {
+                              const ServiceIcon = service.icon;
+                              const isServiceActive = isActiveLink(service.href);
+                              return (
+                                <Link
+                                  key={index}
+                                  href={service.href}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                    isServiceActive
+                                      ? "text-yellow-600 bg-yellow-50 font-medium"
+                                      : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
+                                  }`}
+                                  onClick={() => {
+                                    setIsOpen(false);
+                                    setMobileDropdownOpen(false);
+                                  }}
+                                >
+                                  <ServiceIcon className="h-4 w-4" />
+                                  {service.name}
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    // Regular navigation items
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
-                        isActive
-                          ? "text-yellow-600 bg-yellow-50"
-                          : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
-                      }`}
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {item.name}
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
+                          isActive
+                            ? "text-yellow-600 bg-yellow-50"
+                            : "text-gray-700 hover:text-yellow-600 hover:bg-yellow-50"
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <Icon className="h-5 w-5" />
+                        {item.name}
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
 
-            {/* Mobile CTA */}
-            <div className="pt-4">
-              <Link
-                href="/quote"
-                className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 ${
-                  isActiveLink("/quote")
-                    ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
-                    : "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
-                }`}
-                onClick={() => setIsOpen(false)}
-              >
-                <FileText className="h-5 w-5" />
-                Get Free Quote
-              </Link>
+              {/* Mobile CTA */}
+              <div className="pt-4">
+                <Link
+                  href="/quote"
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <FileText className="h-5 w-5" />
+                  Get Free Quote
+                </Link>
+              </div>
             </div>
+
+            {/* Mobile Menu Backdrop */}
+            <div
+              className="absolute  z-30"
+              onClick={() => setIsOpen(false)}
+            />
           </div>
-        </div>
-
-        {/* Optional: Mobile Menu Backdrop */}
-        {isOpen && (
-          <div 
-            className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-30"
-            onClick={() => setIsOpen(false)}
-            style={{ top: '100%' }} // دائماً أسفل الـ navbar
-
-          />
         )}
       </nav>
     </>
