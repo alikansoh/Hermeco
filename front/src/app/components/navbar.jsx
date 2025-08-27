@@ -257,7 +257,7 @@ const Navbar = () => {
         <div
           className={`lg:hidden transition-all duration-500 ease-in-out ${
             isOpen
-              ? "max-h-screen opacity-100 visible"
+              ? "max-h-[100vh] opacity-100 visible"
               : "max-h-0 opacity-0 invisible overflow-hidden"
           }`}
         >
@@ -271,8 +271,8 @@ const Navbar = () => {
               return (
                 <div key={item.name}>
                   {item.hasDropdown ? (
-                    // Services with dropdown button
-                    <div className="relative">
+                    // Services with dropdown - using static flow instead of absolute positioning
+                    <div>
                       <div className="flex items-center justify-between">
                         <Link
                           href={item.href}
@@ -302,10 +302,16 @@ const Navbar = () => {
                         </button>
                       </div>
                       
-                      {/* Mobile Services Dropdown - Overlay */}
-                      {mobileDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full bg-white border-t border-gray-100 shadow-lg z-10">
-                          <div className="px-4 py-3 space-y-2">
+                      {/* Mobile Services Dropdown - Static Flow Layout */}
+                      <div
+                        className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                          mobileDropdownOpen
+                            ? "max-h-96 opacity-100 mt-2"
+                            : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <div className="bg-white rounded-lg border border-gray-100 shadow-sm">
+                          <div className="px-3 py-2 space-y-1">
                             {services.map((service, index) => {
                               const ServiceIcon = service.icon;
                               const isServiceActive = isActiveLink(service.href);
@@ -313,27 +319,34 @@ const Navbar = () => {
                                 <Link
                                   key={index}
                                   href={service.href}
-                                  onClick={(e) => handleSmoothScroll(e, service.href)}
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  onClick={(e) => {
+                                    handleSmoothScroll(e, service.href);
+                                    setIsOpen(false);
+                                    setMobileDropdownOpen(false);
+                                  }}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                     isServiceActive
                                       ? "text-yellow-600 bg-yellow-50 font-medium"
                                       : "text-gray-600 hover:text-yellow-600 hover:bg-yellow-50"
                                   }`}
                                 >
                                   <ServiceIcon className="h-4 w-4" />
-                                  {service.name}
+                                  <span>{service.name}</span>
                                 </Link>
                               );
                             })}
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   ) : (
                     // Regular navigation items
                     <Link
                       href={item.href}
-                      onClick={(e) => handleSmoothScroll(e, item.href)}
+                      onClick={(e) => {
+                        handleSmoothScroll(e, item.href);
+                        setIsOpen(false);
+                      }}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg text-base font-semibold transition-all duration-300 ${
                         isActive
                           ? "text-yellow-600 bg-yellow-50"
@@ -352,7 +365,10 @@ const Navbar = () => {
             <div className="pt-4">
               <Link
                 href="/quote"
-                onClick={(e) => handleSmoothScroll(e, "/quote")}
+                onClick={(e) => {
+                  handleSmoothScroll(e, "/quote");
+                  setIsOpen(false);
+                }}
                 className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 ${
                   isActiveLink("/quote")
                     ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
