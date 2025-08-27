@@ -29,7 +29,7 @@ const HeroSection = () => {
 
   const features = [
     "Licensed & Insured Professionals",
-    "20+ Years Experience",
+    "5+ Years Experience",
     "Professional Consultations",
     "Emergency Services Available",
   ];
