@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/navbar";
+import CustomCursor from "./components/CustomCursor";
 // Primary font - Strong, professional, highly readable
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: 'swap',
 });
-
+  
 // Heading font - Bold, sturdy, construction-appropriate
 const robotoSlab = Roboto_Slab({
   variable: "--font-roboto-slab",
@@ -33,6 +34,8 @@ export default function RootLayout({
         className={`${inter.variable} ${robotoSlab.variable} antialiased`}
       >
               <Navbar/>
+              <CustomCursor />
+
 
         {children}
       </body>
