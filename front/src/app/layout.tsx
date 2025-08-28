@@ -3,19 +3,20 @@ import { Inter, Roboto_Slab } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/navbar";
 import CustomCursor from "./components/CustomCursor";
+import Footer from "./components/Footer";
 // Primary font - Strong, professional, highly readable
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  display: 'swap',
+  display: "swap",
 });
-  
+
 // Heading font - Bold, sturdy, construction-appropriate
 const robotoSlab = Roboto_Slab({
   variable: "--font-roboto-slab",
   subsets: ["latin"],
-  weight: ['400', '500', '600', '700', '800'],
-  display: 'swap',
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -30,14 +31,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${inter.variable} ${robotoSlab.variable} antialiased`}
-      >
-              <Navbar/>
-              <CustomCursor />
-
+      <body className={`${inter.variable} ${robotoSlab.variable} antialiased`}>
+        <Navbar />
+        <CustomCursor />
 
         {children}
+        <Footer />
       </body>
     </html>
   );

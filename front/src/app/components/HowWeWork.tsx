@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Clipboard, Ruler, Hammer, Key } from "lucide-react";
+import Link from "next/link";
 
 const steps = [
   {
@@ -106,31 +107,35 @@ export default function ProcessSection() {
           </div>
         </div>
 
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          viewport={{ once: true }}
-          className="relative text-center mt-28 rounded-2xl overflow-hidden"
-        >
-          {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-amber-600 to-yellow-700 opacity-95"></div>
 
-          {/* Content */}
-          <div className="relative z-10 px-6 py-16 lg:py-20 text-white">
-            <h3 className="text-3xl lg:text-4xl font-extrabold mb-4 drop-shadow-md">
-              Ready to Begin Your Project?
-            </h3>
-            <p className="text-lg lg:text-xl mb-8 max-w-2xl mx-auto opacity-90 leading-relaxed">
-              Contact us today for your complimentary consultation and discover
-              how our proven process can bring your construction vision to life.
-            </p>
-            <button className="bg-white text-yellow-700 font-bold px-10 py-4 rounded-xl shadow-lg hover:bg-gray-100 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-              Schedule Consultation
-            </button>
-          </div>
-        </motion.div>
+{/* CTA */}
+<motion.div
+  initial={{ opacity: 0, y: 30 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.6, delay: 0.3 }}
+  viewport={{ once: true }}
+  className="relative text-center mt-28 rounded-2xl overflow-hidden"
+>
+  {/* Background */}
+  <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 via-amber-600 to-yellow-700 opacity-95"></div>
+
+  {/* Content */}
+  <div className="relative z-10 px-6 py-16 lg:py-20 text-white">
+    <h3 className="text-3xl lg:text-4xl font-extrabold mb-4 drop-shadow-md">
+      Ready to Begin Your Project?
+    </h3>
+    <p className="text-lg lg:text-xl mb-8 max-w-2xl mx-auto opacity-90 leading-relaxed">
+      Contact us today for your complimentary consultation and discover how our 
+      proven process can bring your construction vision to life.
+    </p>
+    <Link href="/contact">
+      <button className="bg-white text-yellow-700 font-bold px-10 py-4 rounded-xl shadow-lg hover:bg-gray-100 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+        Schedule Consultation
+      </button>
+    </Link>
+  </div>
+</motion.div>
+
       </div>
     </section>
   );
