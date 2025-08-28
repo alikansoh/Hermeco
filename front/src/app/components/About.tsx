@@ -63,8 +63,8 @@ const services = [
 
 const londonBoroughs = [
   "Westminster", "Camden", "Islington", 
-  "Greenwich", "Lewisham", "Southwark", "Lambeth",
-  "Hammersmith & Fulham", "Kensington & Chelsea", "Brent", "Ealing",
+  "Greenwich", "Southwark",
+  "Hammersmith", "Chelsea", "Brent", "Ealing",
   "Hounslow", "Richmond upon Thames", "Kingston upon Thames", 
   "Sutton", "Croydon", "Bromley", "Barnet", "Harrow", 
   "Enfield"

@@ -24,7 +24,7 @@ export default function CustomCursor() {
     };
   }, []);
 
-  if (isMobile) return null; // ❌ Don't render at all on mobile/tablet
+  if (isMobile) return null; 
 
   return (
     <motion.div
