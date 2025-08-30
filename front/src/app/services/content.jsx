@@ -190,20 +190,20 @@ const ServicesPage = () => {
         </div>
       </div>
 
-      {/* Professional Services Section - Enhanced tablet layout */}
+      {/* Professional Services Section - Enhanced with animations and amber colors */}
       <div id="services" className="bg-gray-50 py-12 md:py-16 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 md:mb-16 lg:mb-20">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 md:mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 md:mb-6 animate-fade-in-up">
               Comprehensive Construction Solutions
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4 animate-fade-in-up animation-delay-200">
               From initial consultation to project completion, we deliver professional construction 
               services with attention to detail and commitment to excellence.
             </p>
           </div>
 
-          {/* Professional Services List - Optimized for tablets */}
+          {/* Professional Services List - Enhanced with animations */}
           <div className="space-y-0">
             {services.map((service, idx) => {
               const Icon = service.icon;
@@ -211,49 +211,62 @@ const ServicesPage = () => {
               const isEven = idx % 2 === 0;
               
               return (
-                <div key={idx}>
+                <div key={idx} className="animate-fade-in-up" style={{ animationDelay: `${idx * 150}ms` }}>
                   <div
                     className={`flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-12 xl:gap-16 items-center py-8 md:py-12 lg:py-16 ${
                       !isEven ? 'lg:flex-row-reverse' : ''
                     }`}
                   >
-                    {/* Service Image - Better tablet sizing */}
-                    <div className="w-full lg:w-1/2  relative group px-4 sm:px-0">
-                      <div className="relative h-80 md:h-120 lg:h-96 w-full overflow-hidden rounded-2xl lg:rounded-3xl shadow-xl">
+                    {/* Service Image - Better tablet sizing with enhanced animations */}
+                    <div className="w-full lg:w-1/2 relative group px-4 sm:px-0">
+                      <div className="relative h-64 md:h-72 lg:h-96 w-full overflow-hidden rounded-2xl lg:rounded-3xl shadow-xl transform transition-all duration-700 hover:scale-105 hover:shadow-2xl hover:shadow-amber-500/20">
                         <Image
                           src={serviceImage}
                           alt={service.name}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="object-cover group-hover:scale-110 transition-transform duration-700"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent group-hover:from-amber-900/40 group-hover:via-amber-900/20 transition-all duration-500" />
                         
-                        {/* Floating icon - Tablet optimized */}
-                        <div className="absolute top-4 md:top-6 left-4 md:left-6">
-                          <div className="h-12 w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-xl lg:rounded-2xl bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 flex items-center justify-center shadow-2xl shadow-yellow-500/25">
-                            <Icon className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-white" />
+                        {/* Floating icon - Enhanced with animations */}
+                        <div className="absolute top-4 md:top-6 left-4 md:left-6 transform transition-all duration-500 group-hover:scale-110 group-hover:rotate-6">
+                          <div className="h-12 w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 rounded-xl lg:rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 flex items-center justify-center shadow-2xl shadow-amber-500/40 group-hover:shadow-amber-400/60 transition-all duration-500">
+                            <Icon className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-white transform transition-transform duration-300 group-hover:scale-110" />
                           </div>
                         </div>
+
+                        {/* Animated overlay on hover */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-amber-400/20 via-transparent to-yellow-400/20" />
                       </div>
                     </div>
 
-                    {/* Service Content - Enhanced tablet typography */}
+                    {/* Service Content - Enhanced with amber colors and animations */}
                     <div className="w-full lg:w-1/2 space-y-4 md:space-y-5 lg:space-y-6 px-4 sm:px-6 lg:px-0">
                       <div className="space-y-3 md:space-y-4">
-                        <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 leading-tight">
-                          {service.name}
+                        {/* Enhanced service name with amber gradient and bigger mobile text */}
+                        <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-4xl xl:text-5xl font-bold leading-tight transform transition-all duration-500 hover:scale-105">
+                          <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 hover:from-amber-700 hover:via-amber-600 hover:to-yellow-600 transition-all duration-300 drop-shadow-sm">
+                            {service.name}
+                          </span>
                         </h3>
-                        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed">
-                          {service.description}
-                        </p>
+                        
+                        {/* Description with vertical amber line */}
+                        <div className="relative pl-6 md:pl-8">
+                          {/* Vertical amber line */}
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-500 via-amber-600 to-yellow-500 rounded-full shadow-lg shadow-amber-500/30 transform transition-all duration-500 hover:w-1.5 hover:shadow-amber-400/50"></div>
+                          
+                          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 leading-relaxed transform transition-all duration-300 hover:text-gray-700">
+                            {service.description}
+                          </p>
+                        </div>
                       </div>
 
-                      {/* Key Features - Tablet optimized */}
-                      <div className="space-y-2 md:space-y-3">
+                      {/* Key Features - Enhanced animations */}
+                      <div className="space-y-2 md:space-y-3 pl-6 md:pl-8">
                         {getServiceFeatures(service.name).map((feature, i) => (
-                          <div key={i} className="flex items-start gap-3 group">
-                            <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-white" />
+                          <div key={i} className="flex items-start gap-3 group transform transition-all duration-300 hover:translate-x-2" style={{ animationDelay: `${(idx * 150) + (i * 100)}ms` }}>
+                            <div className="h-5 w-5 md:h-6 md:w-6 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:scale-110 transition-transform duration-300 shadow-md group-hover:shadow-lg shadow-amber-500/30">
+                              <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-white transform transition-transform duration-200 group-hover:rotate-12" />
                             </div>
                             <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-200 text-sm md:text-base lg:text-lg leading-relaxed">
                               {feature}
@@ -262,20 +275,20 @@ const ServicesPage = () => {
                         ))}
                       </div>
 
-                      <div className="pt-2 md:pt-4 lg:pt-6">
+                      <div className="pt-2 md:pt-4 lg:pt-6 pl-6 md:pl-8">
                         <Link
                           href={service.href}
-                          className="inline-flex items-center gap-2 md:gap-3 bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-6 md:px-8 lg:px-10 py-3 md:py-3.5 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-sm md:text-base lg:text-lg shadow-xl hover:shadow-2xl hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105 hover:from-yellow-600 hover:to-amber-700 group w-full sm:w-auto justify-center sm:justify-start"
+                          className="inline-flex items-center gap-2 md:gap-3 bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white px-6 md:px-8 lg:px-10 py-3 md:py-3.5 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-sm md:text-base lg:text-lg shadow-xl hover:shadow-2xl hover:shadow-amber-500/40 transition-all duration-500 hover:scale-105 hover:from-amber-600 hover:to-yellow-700 group w-full sm:w-auto justify-center sm:justify-start transform hover:-translate-y-1"
                         >
                           <span className="hidden sm:inline md:hidden lg:inline">Learn More About {service.name.split(' ')[0]}</span>
                           <span className="sm:hidden md:inline lg:hidden">Learn More About {service.name.split(' ')[0]}</span>
-                          <ArrowRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform duration-200" />
+                          <ArrowRight className="h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-2 transition-transform duration-300" />
                         </Link>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Professional Divider - Only show between services, not after the last one */}
+                  {/* Professional Divider - Enhanced with amber accent */}
                   {idx < services.length - 1 && (
                     <div className="relative px-4 sm:px-6 lg:px-0">
                       <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -283,7 +296,7 @@ const ServicesPage = () => {
                       </div>
                       <div className="relative flex justify-center">
                         <div className="bg-gray-50 px-6 py-2">
-                          <div className="h-3 w-3 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 opacity-60"></div>
+                          <div className="h-3 w-3 rounded-full bg-gradient-to-r from-amber-400 to-yellow-500 opacity-80 animate-pulse shadow-lg shadow-amber-400/30"></div>
                         </div>
                       </div>
                     </div>
@@ -301,7 +314,7 @@ const ServicesPage = () => {
           <div className="text-center mb-10 md:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 md:mb-4 lg:mb-6 text-gray-900">
               Why Choose 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-500"> Hermeco</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-500"> Hermeco</span>
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-4">
               We combine years of experience with modern techniques and materials to deliver 
@@ -322,13 +335,13 @@ const ServicesPage = () => {
                 icon: Award,
                 title: "5+ Years Experience",
                 description: "Proven track record across London properties",
-                color: "from-yellow-400 to-amber-500"
+                color: "from-amber-400 to-yellow-500"
               },
               {
                 icon: Star,
                 title: "Quality Materials",
                 description: "Premium components for lasting results",
-                color: "from-yellow-400 to-amber-500"
+                color: "from-amber-400 to-yellow-500"
               },
               {
                 icon: Clock,
@@ -339,7 +352,7 @@ const ServicesPage = () => {
             ].map((feature, i) => {
               const FeatureIcon = feature.icon;
               return (
-                <div key={i} className="text-center group px-4 md:px-2">
+                <div key={i} className="text-center group px-4 md:px-2 transform transition-all duration-500 hover:scale-105">
                   <div className="flex justify-center mb-4 md:mb-5 lg:mb-6">
                     <div className={`h-16 w-16 md:h-18 md:w-18 lg:h-20 lg:w-20 xl:h-24 xl:w-24 rounded-2xl bg-gradient-to-r ${feature.color} flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-xl group-hover:shadow-2xl`}>
                       <FeatureIcon className="h-8 w-8 md:h-9 md:w-9 lg:h-10 lg:w-10 xl:h-12 xl:w-12 text-white" />
@@ -352,8 +365,8 @@ const ServicesPage = () => {
             })}
           </div>
 
-          {/* Call to Action - Enhanced tablet layout */}
-          <div className="bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-50 backdrop-blur-xl rounded-3xl p-6 md:p-8 lg:p-10 text-center border-2 border-yellow-200/50 mx-4 sm:mx-0 shadow-xl shadow-yellow-100/50">
+          {/* Call to Action - Enhanced with amber colors */}
+          <div className="bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 backdrop-blur-xl rounded-3xl p-6 md:p-8 lg:p-10 text-center border-2 border-amber-200/50 mx-4 sm:mx-0 shadow-xl shadow-amber-100/50">
             <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-gray-900">Ready to Start Your Project?</h3>
             <p className="text-gray-700 mb-6 md:mb-7 lg:mb-8 max-w-2xl mx-auto text-sm sm:text-base md:text-lg lg:text-xl px-4 leading-relaxed">
               Contact us today for a free consultation and detailed quote. Our team will assess 
@@ -362,14 +375,14 @@ const ServicesPage = () => {
             <div className="flex flex-col sm:flex-row gap-3 md:gap-4 lg:gap-6 justify-center max-w-md sm:max-w-none mx-auto">
               <Link
                 href="/quote"
-                className="bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-6 sm:px-8 md:px-10 lg:px-12 py-3 md:py-4 lg:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl shadow-xl hover:shadow-2xl hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105 hover:from-yellow-600 hover:to-amber-700 inline-flex items-center gap-2 md:gap-3 justify-center w-full sm:w-auto"
+                className="bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white px-6 sm:px-8 md:px-10 lg:px-12 py-3 md:py-4 lg:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl shadow-xl hover:shadow-2xl hover:shadow-amber-500/40 transition-all duration-300 hover:scale-105 hover:from-amber-600 hover:to-yellow-700 inline-flex items-center gap-2 md:gap-3 justify-center w-full sm:w-auto"
               >
                 <ArrowRight className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 Get Free Quote
               </Link>
               <Link
                 href="tel:+447300825333"
-                className="bg-white border-2 border-yellow-300 hover:bg-yellow-50 text-gray-900 px-6 sm:px-8 md:px-10 lg:px-12 py-3 md:py-4 lg:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:border-yellow-400 transition-all duration-300 hover:scale-105 inline-flex items-center gap-2 md:gap-3 justify-center w-full sm:w-auto shadow-lg hover:shadow-xl"
+                className="bg-white border-2 border-amber-300 hover:bg-amber-50 text-gray-900 px-6 sm:px-8 md:px-10 lg:px-12 py-3 md:py-4 lg:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl hover:border-amber-400 transition-all duration-300 hover:scale-105 inline-flex items-center gap-2 md:gap-3 justify-center w-full sm:w-auto shadow-lg hover:shadow-xl"
               >
                 <Phone className="h-4 w-4 md:h-5 md:w-5 lg:h-6 lg:w-6" />
                 Call Now
@@ -378,6 +391,28 @@ const ServicesPage = () => {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animation-delay-200 {
+          animation-delay: 200ms;
+        }
+      `}</style>
     </section>
   );
 };
