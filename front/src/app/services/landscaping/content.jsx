@@ -447,7 +447,7 @@ const LandscapingPage = () => {
           {/* Stats Section */}
           <div className="grid grid-cols-2 xs:grid-cols-2 md:grid-cols-4 gap-4 xs:gap-8 glass-morphism rounded-3xl p-4 xs:p-8 max-w-4xl mx-auto">
             <div className="text-center flex flex-col items-center">
-              <AnimatedCounter target={500} suffix="+" />
+              <AnimatedCounter target={100} suffix="+" />
               <p className="text-gray-300 mt-2 text-xs xs:text-sm">Projects Completed</p>
             </div>
             <div className="text-center flex flex-col items-center">
