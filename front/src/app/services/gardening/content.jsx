@@ -185,7 +185,7 @@ const GardeningPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 lg:gap-6 justify-center items-center mb-8 md:mb-12 px-4">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-gradient-to-r from-green-500 via-green-600 to-lime-500 text-white px-6 sm:px-7 md:px-8 lg:px-10 py-3 md:py-3.5 lg:py-4 rounded-2xl font-bold text-sm sm:text-base md:text-lg shadow-2xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105 hover:from-green-600 hover:to-lime-600 flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-center"
             >
               <span className="hidden md:inline">Get Free Gardening Quote</span>
@@ -364,7 +364,7 @@ const GardeningPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center max-w-lg sm:max-w-none mx-auto">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-white text-green-600 px-8 md:px-10 lg:px-12 py-4 md:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl shadow-xl hover:shadow-2xl hover:scale-105 inline-flex items-center gap-3 justify-center w-full sm:w-auto"
             >
               <Calculator className="h-5 w-5 md:h-6 md:w-6 group-hover:rotate-12 transition-transform duration-200" />

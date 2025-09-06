@@ -231,7 +231,7 @@ const AboutUsVisionMission = () => (
           Get Free Quote
         </a>
         <span className="block text-gray-500 mt-4 text-sm">
-          Or call us directly: <a href="tel:+442012345678" className="underline hover:text-yellow-600">+44 20 1234 5678</a>
+          Or call us directly: <a href="tel:+447300 825333" className="underline hover:text-yellow-600">07300 825333</a>
         </span>
       </motion.div>
 

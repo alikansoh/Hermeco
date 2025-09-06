@@ -209,7 +209,7 @@ const ProjectsSliderSection = () => {
 
                   {/* Professional CTA */}
                   <Link
-                    href="/Projects"
+                    href="/projects"
                     className="inline-flex items-center justify-center gap-2 bg-white border-2 border-amber-500 text-amber-600 px-6 py-3 rounded-lg font-semibold hover:bg-amber-500 hover:text-white transition-all duration-300 group"
                   >
                     <span>View Case Study</span>
@@ -273,7 +273,7 @@ const ProjectsSliderSection = () => {
               </div>
 
               <Link
-                href="/Projects"
+                href="/projects"
                 className="inline-flex items-center gap-3 bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-lg font-bold text-lg transition-all duration-300 hover:shadow-lg"
               >
                 View All Projects

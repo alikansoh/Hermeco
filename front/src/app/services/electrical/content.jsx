@@ -183,7 +183,7 @@ const ElectricalPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 lg:gap-6 justify-center items-center mb-8 md:mb-12 lg:mb-16 px-4">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-6 sm:px-7 md:px-8 lg:px-10 py-3 md:py-3.5 lg:py-4 rounded-2xl font-bold text-sm sm:text-base md:text-lg shadow-2xl hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105 hover:from-yellow-600 hover:to-amber-700 flex items-center gap-2 md:gap-3 w-full sm:w-auto justify-center"
             >
               <span className="hidden md:inline">Get Free Electrical Quote</span>
@@ -675,7 +675,7 @@ const ElectricalPage = () => {
 
           <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center max-w-lg sm:max-w-none mx-auto">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white px-8 md:px-10 lg:px-12 py-4 md:py-5 rounded-2xl font-bold text-sm sm:text-base md:text-lg lg:text-xl shadow-xl hover:shadow-2xl hover:shadow-amber-500/40 transition-all duration-300 hover:scale-105 hover:from-amber-600 hover:to-yellow-700 inline-flex items-center gap-3 justify-center w-full sm:w-auto"
             >
               <Lightbulb className="h-5 w-5 md:h-6 md:w-6 group-hover:rotate-12 transition-transform" />

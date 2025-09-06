@@ -13,7 +13,7 @@ const stats = [
     icon: HardHat,
     value: 5,
     label: "Years Experience",
-    description: "25+ years of construction excellence",
+    description: "5+ years of construction excellence",
   },
   {
     icon: Users,
@@ -67,12 +67,6 @@ const socialLinks = [
   { icon: Linkedin, href: "#", label: "LinkedIn" },
 ];
 
-const certifications = [
-  "CITB Registered",
-  "CSCS Certified",
-  "Health & Safety Compliant",
-  "Building Regulations Approved"
-];
 
 // Animated Counter
 const Counter = ({ value }: { value: number }) => {
@@ -255,20 +249,7 @@ const ContactUs = () => {
               </div>
             </div>
             {/* Certifications */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
-              <h3 className="font-bold text-yellow-800 mb-4 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5" />
-                Certified & Compliant
-              </h3>
-              <ul className="space-y-2">
-                {certifications.map((cert, index) => (
-                  <li key={index} className="flex items-center gap-2 text-yellow-700">
-                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm font-medium">{cert}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+           
           </motion.div>
 
           {/* Contact Form */}

@@ -24,7 +24,9 @@ import {
   Flower2,
   Calculator,
   ScrollText,
+  ShieldCheck,
 } from "lucide-react";
+import { Cookie } from "next/font/google";
 
 const Footer = () => {
   return (
@@ -51,35 +53,58 @@ const Footer = () => {
 
         {/* Services */}
         <div>
-          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">Our Services</h3>
+          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">
+            Our Services
+          </h3>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/services/renovations" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
-                <Hammer className="h-4 w-4 text-yellow-500" /> Renovations & Remodeling
+              <Link
+                href="/services/renovations"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
+                <Hammer className="h-4 w-4 text-yellow-500" /> Renovations &
+                Remodeling
               </Link>
             </li>
             <li>
-              <Link href="/services/electrical" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/services/electrical"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <Zap className="h-4 w-4 text-yellow-500" /> Electrical Services
               </Link>
             </li>
             <li>
-              <Link href="/services/plumbing" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
-                <Droplet className="h-4 w-4 text-yellow-500" /> Plumbing Services
+              <Link
+                href="/services/plumbing"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
+                <Droplet className="h-4 w-4 text-yellow-500" /> Plumbing
+                Services
               </Link>
             </li>
             <li>
-              <Link href="/services/painting" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
-                <Paintbrush className="h-4 w-4 text-yellow-500" /> Decorations & Painting
+              <Link
+                href="/services/painting"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
+                <Paintbrush className="h-4 w-4 text-yellow-500" /> Decorations &
+                Painting
               </Link>
             </li>
             <li>
-              <Link href="/services/gardening" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/services/gardening"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <TreeDeciduous className="h-4 w-4 text-yellow-500" /> Gardening
               </Link>
             </li>
             <li>
-              <Link href="/services/landscaping" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/services/landscaping"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <Flower2 className="h-4 w-4 text-yellow-500" /> Landscaping
               </Link>
             </li>
@@ -88,45 +113,72 @@ const Footer = () => {
 
         {/* Quick Links */}
         <div>
-          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">Quick Links</h3>
+          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">
+            Quick Links
+          </h3>
           <ul className="space-y-2 text-sm">
             <li>
-              <Link href="/" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <Home className="h-4 w-4 text-yellow-500" /> Home
               </Link>
             </li>
             <li>
-              <Link href="/projects" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/projects"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <FolderOpen className="h-4 w-4 text-yellow-500" /> Projects
               </Link>
             </li>
             <li>
-              <Link href="/about" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/about"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <Users className="h-4 w-4 text-yellow-500" /> About
               </Link>
             </li>
             <li>
-              <Link href="/contact" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/contact"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <MessageSquare className="h-4 w-4 text-yellow-500" /> Contact
               </Link>
             </li>
             <li>
-              <Link href="/quote" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
-                <Calculator className="h-4 w-4 text-yellow-500" /> Free Quote
+              <Link
+                href="/cookies"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
+                <ShieldCheck className="h-4 w-4 text-yellow-500" /> Cookies
               </Link>
             </li>
             <li>
-              <Link href="/privacy-policy" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/privacy-policy"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <Shield className="h-4 w-4 text-yellow-500" /> Privacy Policy
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
-                <ScrollText className="h-4 w-4 text-yellow-500" /> Terms & Conditions
+              <Link
+                href="/terms"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
+                <ScrollText className="h-4 w-4 text-yellow-500" /> Terms &
+                Conditions
               </Link>
             </li>
             <li>
-              <Link href="/faq" className="flex items-center gap-2 hover:text-yellow-600 transition-colors">
+              <Link
+                href="/faq"
+                className="flex items-center gap-2 hover:text-yellow-600 transition-colors"
+              >
                 <HelpCircle className="h-4 w-4 text-yellow-500" /> FAQ
               </Link>
             </li>
@@ -135,16 +187,31 @@ const Footer = () => {
 
         {/* Contact */}
         <div>
-          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">Get in Touch</h3>
+          <h3 className="text-yellow-600 font-semibold text-lg mb-4 border-b-2 border-yellow-500 inline-block pb-1">
+            Get in Touch
+          </h3>
           <ul className="space-y-3 text-sm">
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-yellow-600" /> 07300825333</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-yellow-600" /> info@Hermeco.co.uk</li>
-            <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-yellow-600" /> 7 Hill Close, London, NW2</li>
+            <li className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-yellow-600" /> 07300825333
+            </li>
+            <li className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-yellow-600" /> info@Hermeco.co.uk
+            </li>
+            <li className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-yellow-600" /> 7 Hill Close,
+              London, NW2
+            </li>
           </ul>
           <div className="flex gap-4 mt-4">
-            <Link href="#" className="hover:text-yellow-600 transition-colors"><Facebook className="h-5 w-5" /></Link>
-            <Link href="#" className="hover:text-yellow-600 transition-colors"><Instagram className="h-5 w-5" /></Link>
-            <Link href="#" className="hover:text-yellow-600 transition-colors"><Linkedin className="h-5 w-5" /></Link>
+            <Link href="#" className="hover:text-yellow-600 transition-colors">
+              <Facebook className="h-5 w-5" />
+            </Link>
+            <Link href="#" className="hover:text-yellow-600 transition-colors">
+              <Instagram className="h-5 w-5" />
+            </Link>
+            <Link href="#" className="hover:text-yellow-600 transition-colors">
+              <Linkedin className="h-5 w-5" />
+            </Link>
           </div>
         </div>
       </div>

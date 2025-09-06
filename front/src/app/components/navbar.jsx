@@ -13,7 +13,6 @@ import {
   Wrench,
   Building,
   Users,
-  FileText,
   ChevronDown,
   ChevronRight,
   Ruler,
@@ -21,16 +20,21 @@ import {
   Droplets,
   Paintbrush,
   Flower2,
+  HelpCircle,
   Trees,
 } from "lucide-react";
+
+const CONTACT_BAR_HEIGHT = 40; // px, adjust to match your actual py-2 + text size
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false); // Fix hydration mismatch
   const pathname = usePathname();
 
   useEffect(() => {
+    setHasMounted(true);
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -68,6 +72,7 @@ const Navbar = () => {
     { name: "Projects", href: "/projects", icon: HardHat },
     { name: "About", href: "/about", icon: Users },
     { name: "Contact", href: "/contact", icon: Phone },
+    { name: "FAQ", href: "/faq", icon: HelpCircle },
   ];
 
   const services = [
@@ -82,17 +87,28 @@ const Navbar = () => {
   return (
     <>
       {/* Top Contact Bar */}
-      <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white py-2 px-4 text-sm">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
+      <div
+        className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white py-2 px-4 text-sm fixed w-full top-0 left-0 z-50"
+        style={hasMounted ? { height: `${CONTACT_BAR_HEIGHT}px`, minHeight: `${CONTACT_BAR_HEIGHT}px` } : {}}
+      >
+        <div className={`max-w-7xl mx-auto flex flex-wrap items-center justify-between${hasMounted ? " h-full" : ""}`}>
+          <div className={`flex items-center gap-6${hasMounted ? " h-full" : ""}`}>
+            <Link
+              href="tel:07300825333"
+              className="flex items-center gap-2 hover:underline"
+              prefetch={false}
+            >
               <Phone className="h-4 w-4" />
               <span>07300825333</span>
-            </div>
-            <div className="flex items-center gap-2">
+            </Link>
+            <Link
+              href="mailto:info@Hermeco.co.uk"
+              className="flex items-center gap-2 hover:underline"
+              prefetch={false}
+            >
               <Mail className="h-4 w-4" />
               <span>info@Hermeco.co.uk</span>
-            </div>
+            </Link>
             <div className="hidden lg:flex items-center gap-2">
               <MapPin className="h-4 w-4" />
               <span>7 Hill Close,London,NW2</span>
@@ -103,11 +119,12 @@ const Navbar = () => {
 
       {/* Main Navbar */}
       <nav
-        className={`relative  top-0 z-50 transition-all duration-500 ${
-          isScrolled
+        className={`fixed w-full left-0 z-50 transition-all duration-500 ${
+          hasMounted && isScrolled
             ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
             : "bg-white shadow-md"
         }`}
+        style={hasMounted ? { top: `${CONTACT_BAR_HEIGHT}px` } : {}}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-32 lg:h-40">
@@ -178,19 +195,8 @@ const Navbar = () => {
               })}
             </div>
 
-            {/* CTA + Mobile Toggle */}
+            {/* Mobile Toggle */}
             <div className="flex items-center gap-4">
-              <Link
-                href="/quote"
-                className={`hidden md:flex items-center gap-2 px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 ${
-                  isActiveLink("/quote")
-                    ? "bg-gradient-to-r from-yellow-600 to-yellow-700 text-white"
-                    : "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
-                }`}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Free Quote</span>
-              </Link>
               <button
                 onClick={toggleMenu}
                 className="lg:hidden p-3 rounded-lg text-gray-700 hover:text-yellow-600 hover:bg-yellow-50 border border-gray-200 transition-all z-50 relative"
@@ -202,7 +208,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu */}
-        {isOpen && (
+        {hasMounted && isOpen && (
           <div className="lg:hidden absolute left-0 right-0 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 shadow-xl z-40 transition-all duration-300">
             <div className="px-4 py-6 space-y-3 max-h-[80vh] overflow-y-auto">
               {navItems.map((item) => {
@@ -293,28 +299,16 @@ const Navbar = () => {
                   </div>
                 );
               })}
-
-              {/* Mobile CTA */}
-              <div className="pt-4  mb-7">
-                <Link
-                  href="/quote"
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all hover:scale-105 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <FileText className="h-5 w-5" />
-                  Get Free Quote
-                </Link>
-              </div>
             </div>
-
-            {/* Mobile Menu Backdrop */}
             <div
-              className="absolute  z-30"
+              className="absolute z-30"
               onClick={() => setIsOpen(false)}
             />
           </div>
         )}
       </nav>
+      {/* Spacer to prevent content being hidden behind fixed nav and contact bar */}
+      <div style={{ height: `${CONTACT_BAR_HEIGHT + 128}px` }} className="w-full"></div>
     </>
   );
 };

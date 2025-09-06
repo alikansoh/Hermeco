@@ -132,7 +132,7 @@ const PaintingDecorationPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-gradient-to-r from-yellow-500 to-amber-600 text-white px-8 py-3 rounded-2xl font-bold text-base shadow-xl hover:scale-105 transition-all flex items-center gap-2"
             >
               Free Quote <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -347,7 +347,7 @@ const PaintingDecorationPage = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/quote"
+              href="/contact"
               className="group bg-white text-amber-600 px-8 py-4 rounded-2xl font-bold text-base shadow-xl hover:bg-gray-50 transition-all flex items-center gap-3 justify-center"
             >
               <Calculator className="h-5 w-5 group-hover:rotate-12 transition-transform" />

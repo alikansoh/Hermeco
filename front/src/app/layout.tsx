@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./components/navbar";
 import CustomCursor from "./components/CustomCursor";
 import Footer from "./components/Footer";
+import FloatingContact from "./components/FloatingContact";
 // Primary font - Strong, professional, highly readable
 const inter = Inter({
   variable: "--font-inter",
@@ -34,8 +35,11 @@ export default function RootLayout({
       <body className={`${inter.variable} ${robotoSlab.variable} antialiased`}>
         <Navbar />
         <CustomCursor />
+        <FloatingContact />
+
 
         {children}
+
         <Footer />
       </body>
     </html>
