@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import NextImage from "next/image";
+import Link from "next/link";
 import { Calendar, User, Tag, Clock, ArrowLeft, Share2, BookOpen, Eye } from "lucide-react";
 
 type Blog = {
@@ -95,13 +96,13 @@ export default function BlogPage() {
             <p className="text-gray-600 leading-relaxed mb-6">
               The article you&apos;re looking for doesn&apos;t exist or may have been moved.
             </p>
-            <a
+            <Link
               href="/blog"
               className="inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transition-all duration-300"
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Blog
-            </a>
+            </Link>
           </div>
         </div>
       </div>
@@ -124,13 +125,13 @@ export default function BlogPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Navigation */}
           <div className="mb-8">
-            <a
+            <Link
               href="/blog"
               className="group inline-flex items-center gap-2 text-yellow-600 hover:text-yellow-700 font-semibold transition-colors duration-300"
             >
               <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
               Back to Articles
-            </a>
+            </Link>
           </div>
 
           {/* Featured Image */}
@@ -281,14 +282,14 @@ export default function BlogPage() {
                   Discover more insights and expert perspectives in our blog collection.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <a
+                  <Link
                     href="/blog"
                     className="group inline-flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white px-8 py-4 rounded-xl font-bold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1"
                   >
                     <BookOpen className="w-5 h-5" />
                     <span className="relative z-10">Read More Articles</span>
                     <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-xl"></div>
-                  </a>
+                  </Link>
                   <button className="group inline-flex items-center gap-2 border-2 border-yellow-500 text-yellow-600 hover:bg-yellow-500 hover:text-white px-8 py-4 rounded-xl font-bold transition-all duration-300">
                     <Share2 className="w-5 h-5 transition-transform group-hover:scale-110" />
                     Share This Article
