@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Ruler,
   Zap,
+  BookOpen,
   Droplets,
   Paintbrush,
   Flower2,
@@ -73,6 +74,8 @@ const Navbar = () => {
     { name: "About", href: "/about", icon: Users },
     { name: "Contact", href: "/contact", icon: Phone },
     { name: "FAQ", href: "/faq", icon: HelpCircle },
+    { name: "Blog", href: "/blog", icon:BookOpen },
+
   ];
 
   const services = [

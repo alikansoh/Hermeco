@@ -5,7 +5,10 @@ import Navbar from "./components/navbar";
 import CustomCursor from "./components/CustomCursor";
 import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
-// Primary font - Strong, professional, highly readable
+import LayoutWrapper from "./components/LayoutWrapper";
+import { Toaster } from "react-hot-toast";
+
+
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -33,14 +36,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${robotoSlab.variable} antialiased`}>
-        <Navbar />
-        <CustomCursor />
-        <FloatingContact />
+         <CustomCursor />
+        <LayoutWrapper>{children}</LayoutWrapper>
+        <Toaster position="top-right" />
 
-
-        {children}
-
-        <Footer />
       </body>
     </html>
   );

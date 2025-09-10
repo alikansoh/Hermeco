@@ -1,11 +1,21 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { toast, Toaster } from "react-hot-toast";
 import {
   Phone, Mail, MapPin, Facebook, Instagram, Linkedin,
   MessageSquare, Send, ShieldCheck, Award, Users,
   CheckCircle, HardHat, Clock, Star,
 } from "lucide-react";
+
+// Interface matching HeroSection
+interface FormData {
+  fullName: string;
+  email: string;
+  telephone: string;
+  service: string;
+  details: string;
+}
 
 // Stats for animated counters
 const stats = [
@@ -67,6 +77,16 @@ const socialLinks = [
   { icon: Linkedin, href: "#", label: "LinkedIn" },
 ];
 
+// Services matching HeroSection
+const services = [
+  "Complete Renovation",
+  "Electrical Services",
+  "Plumbing Services",
+  "Landscaping",
+  "Kitchen Remodeling",
+  "Bathroom Remodeling",
+  "Other",
+];
 
 // Animated Counter
 const Counter = ({ value }: { value: number }) => {
@@ -94,33 +114,59 @@ const Counter = ({ value }: { value: number }) => {
 };
 
 const ContactUs = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    projectType: '',
-    message: ''
+  // Updated form data structure matching HeroSection
+  const [formData, setFormData] = useState<FormData>({
+    fullName: "",
+    email: "",
+    telephone: "",
+    service: "",
+    details: "",
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  // Updated input change handler matching HeroSection
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Updated submit handler matching HeroSection
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    setFormData({ name: '', email: '', phone: '', projectType: '', message: '' });
-    alert('Thank you for your enquiry. We will contact you within 24 hours with a detailed quote.');
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data: { message?: string } = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Something went wrong");
+
+      toast.success("Booking created successfully!");
+      setFormData({ fullName: "", email: "", telephone: "", service: "", details: "" });
+    } catch (err: unknown) {
+      console.error(err);
+
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("Failed to create booking");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <section className="relative bg-gradient-to-br from-yellow-50 via-amber-50 to-gray-100 min-h-screen overflow-hidden">
+      <Toaster position="top-right" />
       {/* Professional header pattern */}
       <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-700"></div>
       {/* SVG subtle pattern */}
@@ -248,11 +294,9 @@ const ContactUs = () => {
                 </div>
               </div>
             </div>
-            {/* Certifications */}
-           
           </motion.div>
 
-          {/* Contact Form */}
+          {/* Contact Form - Updated to match HeroSection */}
           <motion.div
             initial={{ opacity: 0, x: 60 }}
             animate={{ opacity: 1, x: 0 }}
@@ -270,23 +314,23 @@ const ContactUs = () => {
               <div className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label htmlFor="name" className="block text-sm font-semibold text-gray-700">
+                    <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700">
                       Full Name *
                     </label>
                     <input
                       type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
                       onChange={handleInputChange}
                       required
-                      placeholder="John Smith"
+                      placeholder="Your Name"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white"
                     />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="email" className="block text-sm font-semibold text-gray-700">
-                      Email Address *
+                      Email Address
                     </label>
                     <input
                       type="email"
@@ -294,80 +338,74 @@ const ContactUs = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      required
-                      placeholder="john@email.com"
+                      placeholder="Your Email"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white"
                     />
                   </div>
                 </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700">
+                    <label htmlFor="telephone" className="block text-sm font-semibold text-gray-700">
                       Phone Number *
                     </label>
                     <input
                       type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
+                      id="telephone"
+                      name="telephone"
+                      value={formData.telephone}
                       onChange={handleInputChange}
                       required
-                      placeholder="07300 825333"
+                      placeholder="Your Phone"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="projectType" className="block text-sm font-semibold text-gray-700">
-                      Project Type *
+                    <label htmlFor="service" className="block text-sm font-semibold text-gray-700">
+                      Service Type *
                     </label>
                     <select
-                      id="projectType"
-                      name="projectType"
-                      value={formData.projectType}
+                      id="service"
+                      name="service"
+                      value={formData.service}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white appearance-none"
                     >
-                      <option value="">Select Project Type</option>
-                      <option value="new-build">New Build Construction</option>
-                      <option value="renovation">Home Renovation</option>
-                      <option value="extension">House Extension</option>
-                      <option value="commercial">Commercial Project</option>
-                      <option value="landscaping">Landscaping</option>
-                      <option value="maintenance">Maintenance & Repairs</option>
-                      <option value="other">Other</option>
+                      <option value="">Select Service</option>
+                      {services.map((s, i) => (
+                        <option key={i} value={s} className="bg-gray-800 text-white">{s}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="message" className="block text-sm font-semibold text-gray-700">
+                  <label htmlFor="details" className="block text-sm font-semibold text-gray-700">
                     Project Details *
                   </label>
                   <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
+                    id="details"
+                    name="details"
+                    value={formData.details}
                     onChange={handleInputChange}
-                    required
                     rows={6}
-                    placeholder="Please provide detailed information about your project including: location, scope of work, timeline, budget range, and any specific requirements. The more details you provide, the more accurate our quote will be."
+                    placeholder="Tell us about your project..."
                     className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all duration-200 bg-white resize-none"
                   />
                 </div>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={loading}
                   className="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-8 py-4 rounded-lg font-bold text-lg shadow-lg transition-all duration-300 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-yellow-500/50 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? (
+                  {loading ? (
                     <div className="flex items-center justify-center gap-3">
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Processing Request...
+                      Booking...
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-3">
                       <Send className="w-5 h-5" />
-                      Request Professional Quote
+                      Book Now
                     </div>
                   )}
                 </button>

@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/components/Hero.jsx", "src/app/components/navbar.jsx", "src/app/components/WhyChooseUs.jsx", "src/app/services/content.jsx", "src/app/projects/content.jsx", "src/app/faq/page.jsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/components/Hero.tsx", "src/app/components/navbar.jsx", "src/app/components/WhyChooseUs.jsx", "src/app/services/content.jsx", "src/app/projects/content.tsx", "src/app/faq/page.jsx", "src/models/Booking.js"],
   "exclude": ["node_modules"]
 }

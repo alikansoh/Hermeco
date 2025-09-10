@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import {
   Building2,
   ChevronLeft,
@@ -18,133 +18,125 @@ import {
   Calendar,
   Grid,
   List,
+  Loader,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
-// Simplified project data
-const allProjects = [
-  {
-    id: 1,
-    title: "Modern House Renovation",
-    date: "July 2024",
-    image: "/api/placeholder/600/400",
-    featured: true,
-    description:
-      "Complete home renovation featuring contemporary design, smart home integration, and sustainable materials. This project transformed a Victorian terrace into a modern family home while preserving its historic character. The renovation included a complete restructure of the interior layout, installation of energy-efficient systems, and the integration of smart home technology throughout. We carefully balanced modern amenities with the building's heritage features, creating a seamless blend of old and new. The project also featured custom-built furniture, a state-of-the-art kitchen, and a beautifully landscaped garden that extends the living space outdoors.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-  {
-    id: 2,
-    title: "Luxury Apartment Complex",
-    date: "March 2024",
-    image: "/api/placeholder/600/400",
-    featured: true,
-    description:
-      "High-rise luxury apartment development with panoramic city views, premium finishes, and sustainable construction practices. Features include rooftop gardens and community amenities. This prestigious development comprises 150 luxury units across 20 floors, each designed with meticulous attention to detail. The building features a stunning glass facade that maximizes natural light while providing breathtaking views of the city skyline. Residents enjoy access to a fully equipped fitness center, rooftop infinity pool, private cinema, and 24/7 concierge services. The development also incorporates sustainable technologies including solar panels, rainwater harvesting systems, and energy-efficient HVAC systems.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-  {
-    id: 3,
-    title: "Office Space Transformation",
-    date: "January 2024",
-    image: "/api/placeholder/600/400",
-    featured: false,
-    description:
-      "Modern office fitout with flexible workspace solutions, collaborative areas, and wellness-focused design elements for a growing technology company. The 5,000 square foot space was completely transformed to support hybrid working models and promote employee wellbeing. The design incorporates biophilic elements, including living walls and natural materials, to create a connection with nature. Flexible meeting spaces can be reconfigured for different team sizes and purposes, while quiet zones provide focused work environments. The project also included the installation of advanced audiovisual systems, ergonomic furniture, and a fully equipped kitchen and break area.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-  {
-    id: 4,
-    title: "Garden Landscape Design",
-    date: "November 2023",
-    image: "/api/placeholder/600/400",
-    featured: false,
-    description:
-      "Sustainable garden transformation featuring native plants, water features, and outdoor entertainment areas designed for year-round enjoyment. This comprehensive landscape project transformed a neglected 2-acre plot into a stunning private oasis. The design incorporates drought-resistant native plantings, a natural swimming pond, and multiple seating areas that take advantage of different aspects throughout the day. A custom-built pergola provides shade for outdoor dining, while winding pathways connect various garden rooms, each with its own character and purpose. The project also included the installation of an automated irrigation system and outdoor lighting to extend the garden's usability into the evening hours.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-  {
-    id: 5,
-    title: "Retail Store Makeover",
-    date: "September 2023",
-    image: "/api/placeholder/600/400",
-    featured: false,
-    description:
-      "Complete retail space redesign focusing on customer experience, brand identity, and efficient traffic flow in a high-footfall location. The 3,500 square foot flagship store was redesigned to create an immersive brand experience that encourages exploration and discovery. The layout optimizes customer flow while creating intimate product display areas that invite closer inspection. Custom millwork and strategic lighting highlight key products and create dramatic focal points throughout the space. The design also incorporates flexible display systems that can be easily reconfigured for seasonal collections and special events, ensuring the space remains fresh and engaging for repeat visitors.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-  {
-    id: 6,
-    title: "Historic Building Restoration",
-    date: "June 2023",
-    image: "/api/placeholder/600/400",
-    featured: true,
-    description:
-      "Careful restoration of a Grade II listed building, balancing heritage preservation with modern functionality and accessibility requirements. This remarkable 18th-century building required extensive restoration to address structural issues while preserving its historical significance. Working closely with heritage consultants, we carefully restored original features including ornate plasterwork, period fireplaces, and traditional sash windows. The project involved installing modern mechanical and electrical systems discretely within the historic fabric, ensuring the building meets contemporary standards without compromising its character. New accessibility features were seamlessly integrated, including a carefully designed lift installation and accessible bathroom facilities that respect the building's proportions and materials.",
-    gallery: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-    ],
-  },
-];
+// Project type matching your API structure
+interface Project {
+  _id: string;
+  title: string;
+  description: string;
+  date: string;
+  images?: string[];
+  featured?: boolean;
+}
 
-const HeroSlider = ({ projects, onProjectClick }) => {
-  const [current, setCurrent] = useState(0);
+interface ApiResponse {
+  success: boolean;
+  data?: Project | Project[];
+  error?: string;
+}
+
+interface HeroSliderProps {
+  projects: Project[];
+  onProjectClick: (project: Project) => void;
+}
+
+interface StatsSectionProps {
+  projectsCount: number;
+}
+
+interface FilterBarProps {
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  viewMode: "grid" | "list";
+  onViewModeChange: (mode: "grid" | "list") => void;
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}
+
+interface ProjectModalProps {
+  project: Project | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface ProjectCardProps {
+  project: Project;
+  viewMode: "grid" | "list";
+  onClick: () => void;
+}
+
+interface ErrorStateProps {
+  error: string | null;
+  onRetry: () => void;
+}
+
+// API service functions
+const projectsApi = {
+  getAll: async (): Promise<Project[]> => {
+    const response = await fetch('/api/projects', {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result: ApiResponse = await response.json();
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to fetch projects');
+    }
+    
+    return Array.isArray(result.data) ? result.data : [];
+  },
+};
+
+const HeroSlider: React.FC<HeroSliderProps> = ({ projects, onProjectClick }) => {
+  const [current, setCurrent] = useState<number>(0);
   const featuredProjects = projects.filter((p) => p.featured);
 
   useEffect(() => {
+    if (featuredProjects.length === 0) return;
+    
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % featuredProjects.length);
     }, 5000);
     return () => clearInterval(timer);
   }, [featuredProjects.length]);
 
-  const nextSlide = () =>
+  const nextSlide = (): void =>
     setCurrent((prev) => (prev + 1) % featuredProjects.length);
-  const prevSlide = () =>
+  const prevSlide = (): void =>
     setCurrent(
       (prev) => (prev - 1 + featuredProjects.length) % featuredProjects.length
     );
 
-  const handleViewProject = () => {
+  const handleViewProject = (): void => {
     onProjectClick(featuredProjects[current]);
   };
+
+  if (featuredProjects.length === 0) {
+    return (
+      <div className="h-[50vh] bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-3xl mb-20 shadow-2xl flex items-center justify-center">
+        <div className="text-center text-white">
+          <Award className="w-16 h-16 mx-auto mb-4 opacity-80" />
+          <h2 className="text-3xl font-bold mb-2">No Featured Projects</h2>
+          <p className="text-xl opacity-90">Check back soon for featured work!</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative h-[70vh] overflow-hidden rounded-3xl mb-20 shadow-2xl">
       <AnimatePresence mode="wait">
         <motion.div
-          key={featuredProjects[current]?.id}
+          key={featuredProjects[current]?._id}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -152,11 +144,20 @@ const HeroSlider = ({ projects, onProjectClick }) => {
           className="absolute inset-0"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent z-10" />
-          <img
-            src={featuredProjects[current]?.image}
-            alt={featuredProjects[current]?.title}
-            className="w-full h-full object-cover"
-          />
+          {featuredProjects[current]?.images?.[0] ? (
+            <Image
+              src={featuredProjects[current].images[0]}
+              alt={featuredProjects[current].title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 100vw"
+              priority
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+              <Building2 className="w-32 h-32 text-white/50" />
+            </div>
+          )}
           <div className="absolute inset-0 z-20 flex items-center">
             <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
               <div className="max-w-2xl">
@@ -195,7 +196,10 @@ const HeroSlider = ({ projects, onProjectClick }) => {
                 >
                   <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg text-white">
                     <Calendar className="w-4 h-4" />
-                    {featuredProjects[current]?.date}
+                    {featuredProjects[current]?.date ? new Date(featuredProjects[current].date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long'
+                    }) : 'No date'}
                   </div>
                 </motion.div>
                 <motion.button
@@ -214,52 +218,56 @@ const HeroSlider = ({ projects, onProjectClick }) => {
         </motion.div>
       </AnimatePresence>
 
-      <button
-        onClick={prevSlide}
-        className="absolute top-1/2 left-6 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition z-30"
-      >
-        <ChevronLeft className="w-6 h-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute top-1/2 right-6 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition z-30"
-      >
-        <ChevronRight className="w-6 h-6" />
-      </button>
-
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-30">
-        {featuredProjects.map((_, idx) => (
+      {featuredProjects.length > 1 && (
+        <>
           <button
-            key={idx}
-            onClick={() => setCurrent(idx)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              current === idx ? "bg-yellow-500 w-8" : "bg-white/50"
-            }`}
-          />
-        ))}
-      </div>
+            onClick={prevSlide}
+            className="absolute top-1/2 left-6 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition z-30"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute top-1/2 right-6 transform -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition z-30"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-30">
+            {featuredProjects.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrent(idx)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  current === idx ? "bg-yellow-500 w-8" : "bg-white/50"
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-const StatsSection = () => {
+const StatsSection: React.FC<StatsSectionProps> = ({ projectsCount }) => {
   const stats = [
     {
       icon: Building2,
       label: "Projects Completed",
-      value: "150+",
+      value: `100+`,
       color: "text-blue-500",
     },
     {
       icon: Users,
       label: "Happy Clients",
-      value: "200+",
+      value: `150+`,
       color: "text-green-500",
     },
     {
       icon: Star,
       label: "5-Star Reviews",
-      value: "5",
+      value: "5.0",
       color: "text-yellow-500",
     },
     {
@@ -295,11 +303,13 @@ const StatsSection = () => {
   );
 };
 
-const FilterBar = ({
+const FilterBar: React.FC<FilterBarProps> = ({
   searchTerm,
   onSearchChange,
   viewMode,
   onViewModeChange,
+  onRefresh,
+  isRefreshing
 }) => {
   return (
     <div className="bg-white rounded-2xl shadow-xl p-6 mb-12 border border-gray-100">
@@ -317,37 +327,50 @@ const FilterBar = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => onViewModeChange("grid")}
-            className={`p-2 rounded-lg transition ${
-              viewMode === "grid"
-                ? "bg-white shadow-md"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-gray-700"
           >
-            <Grid className="w-5 h-5" />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
           </button>
-          <button
-            onClick={() => onViewModeChange("list")}
-            className={`p-2 rounded-lg transition ${
-              viewMode === "list"
-                ? "bg-white shadow-md"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <List className="w-5 h-5" />
-          </button>
+
+          <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+            <button
+              onClick={() => onViewModeChange("grid")}
+              className={`p-2 rounded-lg transition ${
+                viewMode === "grid"
+                  ? "bg-white shadow-md"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <Grid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => onViewModeChange("list")}
+              className={`p-2 rounded-lg transition ${
+                viewMode === "list"
+                  ? "bg-white shadow-md"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const ProjectModal = ({ project, isOpen, onClose }) => {
-  const [currentImage, setCurrentImage] = useState(0);
+const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose }) => {
+  const [currentImage, setCurrentImage] = useState<number>(0);
 
   if (!isOpen || !project) return null;
+
+  const images = project.images && project.images.length > 0 ? project.images : ['/api/placeholder/800/600'];
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
@@ -364,42 +387,60 @@ const ProjectModal = ({ project, isOpen, onClose }) => {
 
         <div className="p-6">
           {/* Main image */}
-          <div className="mb-6">
-            <img
-              src={project.gallery[currentImage]}
+          <div className="mb-6 relative h-96 w-full rounded-lg overflow-hidden">
+            <Image
+              src={images[currentImage]}
               alt={`${project.title} ${currentImage + 1}`}
-              className="w-full h-96 object-cover rounded-lg"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 60vw"
             />
           </div>
 
           {/* Thumbnail gallery */}
-          <div className="grid grid-cols-6 gap-2 mb-8">
-            {project.gallery.map((img, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentImage(idx)}
-                className={`relative rounded-lg overflow-hidden aspect-square ${
-                  currentImage === idx
-                    ? "ring-2 ring-yellow-500"
-                    : "hover:opacity-80"
-                } transition`}
-              >
-                <img
-                  src={img}
-                  alt={`${project.title} thumbnail ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
+          {images.length > 1 && (
+            <div className="grid grid-cols-6 gap-2 mb-8">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImage(idx)}
+                  className={`relative rounded-lg overflow-hidden aspect-square ${
+                    currentImage === idx
+                      ? "ring-2 ring-yellow-500"
+                      : "hover:opacity-80"
+                  } transition`}
+                >
+                  <Image
+                    src={img}
+                    alt={`${project.title} thumbnail ${idx + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 20vw, (max-width: 1200px) 15vw, 10vw"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Project details */}
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg">
                 <Calendar className="w-4 h-4 text-yellow-500" />
-                <span className="font-medium">{project.date}</span>
+                <span className="font-medium">
+                  {project.date ? new Date(project.date).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  }) : 'No date available'}
+                </span>
               </div>
+              {project.featured && (
+                <div className="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg">
+                  <Award className="w-4 h-4 text-yellow-600" />
+                  <span className="font-medium text-yellow-800">Featured</span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -417,7 +458,11 @@ const ProjectModal = ({ project, isOpen, onClose }) => {
   );
 };
 
-const ProjectCard = ({ project, viewMode, onClick }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, viewMode, onClick }) => {
+  const primaryImage = project.images && project.images.length > 0 
+    ? project.images[0] 
+    : '/api/placeholder/600/400';
+
   if (viewMode === "list") {
     return (
       <motion.div
@@ -427,11 +472,13 @@ const ProjectCard = ({ project, viewMode, onClick }) => {
         className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 flex gap-6 hover:shadow-2xl transition-all group cursor-pointer"
         onClick={onClick}
       >
-        <div className="w-48 h-32 rounded-xl overflow-hidden flex-shrink-0">
-          <img
-            src={project.image}
+        <div className="w-48 h-32 rounded-xl overflow-hidden flex-shrink-0 relative">
+          <Image
+            src={primaryImage}
             alt={project.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 40vw, 200px"
           />
         </div>
 
@@ -441,9 +488,22 @@ const ProjectCard = ({ project, viewMode, onClick }) => {
               <h3 className="text-2xl font-bold text-gray-900 mb-2">
                 {project.title}
               </h3>
-              <div className="flex items-center gap-2 text-gray-500 mb-3">
-                <Calendar className="w-4 h-4" />
-                <span>{project.date}</span>
+              <div className="flex items-center gap-4 text-gray-500 mb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {project.date ? new Date(project.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long'
+                    }) : 'No date'}
+                  </span>
+                </div>
+                {project.featured && (
+                  <div className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-full">
+                    <Award className="w-3 h-3 text-yellow-600" />
+                    <span className="text-xs font-medium text-yellow-800">Featured</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -472,12 +532,20 @@ const ProjectCard = ({ project, viewMode, onClick }) => {
       onClick={onClick}
     >
       <div className="relative h-64 overflow-hidden">
-        <img
-          src={project.image}
+        <Image
+          src={primaryImage}
           alt={project.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        {project.featured && (
+          <div className="absolute top-4 left-4 flex items-center gap-1 bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-semibold">
+            <Award className="w-3 h-3" />
+            Featured
+          </div>
+        )}
       </div>
 
       <div className="p-6">
@@ -486,7 +554,12 @@ const ProjectCard = ({ project, viewMode, onClick }) => {
         </h3>
         <div className="flex items-center gap-2 text-gray-500 mb-4">
           <Calendar className="w-4 h-4" />
-          <span>{project.date}</span>
+          <span>
+            {project.date ? new Date(project.date).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long'
+            }) : 'No date'}
+          </span>
         </div>
         <p className="text-gray-600 mb-6 line-clamp-3">{project.description}</p>
 
@@ -501,16 +574,74 @@ const ProjectCard = ({ project, viewMode, onClick }) => {
   );
 };
 
-const ProjectPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("grid");
-  const [page, setPage] = useState(1);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const LoadingSpinner: React.FC = () => (
+  <div className="fixed inset-0 bg-gradient-to-br from-gray-50 via-white to-yellow-50 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center text-center">
+      <div className="relative w-20 h-20 mb-6">
+        <div className="w-20 h-20 border-4 border-yellow-200 rounded-full"></div>
+        <div className="w-20 h-20 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin absolute inset-0"></div>
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">Loading Projects</h3>
+      <p className="text-gray-600">Fetching our amazing work...</p>
+    </div>
+  </div>
+);
+
+const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry }) => (
+  <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-yellow-50 flex items-center justify-center p-6">
+    <div className="text-center max-w-md">
+      <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+        <AlertCircle className="w-10 h-10 text-red-500" />
+      </div>
+      <h3 className="text-2xl font-bold text-gray-900 mb-4">
+        Unable to Load Projects
+      </h3>
+      <p className="text-gray-600 mb-8">
+        {error || 'There was a problem connecting to our server. Please try again.'}
+      </p>
+      <button
+        onClick={onRetry}
+        className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-xl font-bold transition-all hover:scale-105"
+      >
+        Try Again
+      </button>
+    </div>
+  </div>
+);
+
+const ProjectPage: React.FC = () => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [page, setPage] = useState<number>(1);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const PAGE_SIZE = viewMode === "list" ? 5 : 6;
 
-  const filteredProjects = allProjects.filter((project) => {
+  // Fetch projects from API
+  const fetchProjects = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await projectsApi.getAll();
+      setProjects(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const filteredProjects = projects.filter((project) => {
     const matchesSearch =
       project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -527,15 +658,23 @@ const ProjectPage = () => {
     setPage(1);
   }, [searchTerm, viewMode]);
 
-  const handleProjectClick = (project) => {
+  const handleProjectClick = (project: Project): void => {
     setSelectedProject(project);
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (): void => {
     setIsModalOpen(false);
     setSelectedProject(null);
   };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error && projects.length === 0) {
+    return <ErrorState error={error} onRetry={fetchProjects} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-yellow-50">
@@ -581,10 +720,10 @@ const ProjectPage = () => {
         </div>
 
         {/* Featured Projects Slider */}
-        <HeroSlider projects={allProjects} onProjectClick={handleProjectClick} />
+        <HeroSlider projects={projects} onProjectClick={handleProjectClick} />
 
         {/* Stats Section */}
-        <StatsSection />
+        <StatsSection projectsCount={projects.length} />
 
         {/* Filter Bar */}
         <FilterBar
@@ -592,6 +731,8 @@ const ProjectPage = () => {
           onSearchChange={setSearchTerm}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onRefresh={fetchProjects}
+          isRefreshing={loading}
         />
 
         {/* Results Summary */}
@@ -607,9 +748,11 @@ const ProjectPage = () => {
             </span>{" "}
             projects
           </div>
-          <div className="text-sm text-gray-500">
-            Page {page} of {totalPages}
-          </div>
+          {totalPages > 1 && (
+            <div className="text-sm text-gray-500">
+              Page {page} of {totalPages}
+            </div>
+          )}
         </div>
 
         {/* Projects Grid/List */}
@@ -623,7 +766,7 @@ const ProjectPage = () => {
           <AnimatePresence mode="wait">
             {pageProjects.map((project) => (
               <ProjectCard
-                key={project.id}
+                key={project._id}
                 project={project}
                 viewMode={viewMode}
                 onClick={() => handleProjectClick(project)}
@@ -632,21 +775,26 @@ const ProjectPage = () => {
           </AnimatePresence>
         </div>
 
-        {filteredProjects.length === 0 && (
+        {filteredProjects.length === 0 && !loading && (
           <div className="text-center py-20">
             <Building2 className="w-20 h-20 text-gray-300 mx-auto mb-6" />
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               No projects found
             </h3>
             <p className="text-gray-600 mb-8">
-              Try adjusting your search to find more projects.
+              {searchTerm ? 
+                'Try adjusting your search to find more projects.' : 
+                'No projects have been added yet. Check back soon!'
+              }
             </p>
-            <button
-              onClick={() => setSearchTerm("")}
-              className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
-            >
-              Clear Search
-            </button>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="bg-yellow-500 hover:bg-yellow-400 text-black px-6 py-3 rounded-lg font-semibold transition-all hover:scale-105"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         )}
 
@@ -664,7 +812,7 @@ const ProjectPage = () => {
 
             <div className="flex gap-2">
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                let pageNum;
+                let pageNum: number;
                 if (totalPages <= 5) {
                   pageNum = i + 1;
                 } else if (page <= 3) {
@@ -705,25 +853,19 @@ const ProjectPage = () => {
         {/* Contact Section */}
         <div className="text-center">
           <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-6">
-            Let's Discuss Your Next Project
+            Let&apos;s Discuss Your Next Project
           </h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
             Ready to transform your space? Get in touch with our expert team for
             a consultation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/contact"
-              className="inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg"
-            >
+            <button className="inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
               Contact Us Today
-            </Link>
-            <Link 
-              href="/services"
-              className="inline-flex items-center justify-center bg-white border-2 border-yellow-500 hover:bg-yellow-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg"
-            >
+            </button>
+            <button className="inline-flex items-center justify-center bg-white border-2 border-yellow-500 hover:bg-yellow-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
               View All Services
-            </Link>
+            </button>
           </div>
         </div>
       </div>
