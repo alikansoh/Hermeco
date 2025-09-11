@@ -387,7 +387,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ project, isOpen, onClose })
 
         <div className="p-6">
           {/* Main image */}
-          <div className="mb-6 relative h-96 w-full rounded-lg overflow-hidden">
+          <div className="mb-6 relative  h-96 md:h-150 w-full rounded-lg overflow-hidden">
             <Image
               src={images[currentImage]}
               alt={`${project.title} ${currentImage + 1}`}
