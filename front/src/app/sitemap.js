@@ -1,5 +1,5 @@
 export default async function sitemap() {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://Hermeco.co.uk";
   
     // Static main pages
     const staticPages = [
