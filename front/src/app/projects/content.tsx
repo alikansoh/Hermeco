@@ -22,6 +22,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
+import Link from "next/link";
 
 // Project type matching your API structure
 interface Project {
@@ -860,12 +861,12 @@ const ProjectPage: React.FC = () => {
             a consultation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
+            <Link href="/contact" className="inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
               Contact Us Today
-            </button>
-            <button className="inline-flex items-center justify-center bg-white border-2 border-yellow-500 hover:bg-yellow-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
+            </Link>
+            <Link href="/services" className="inline-flex items-center justify-center bg-white border-2 border-yellow-500 hover:bg-yellow-50 text-gray-700 px-8 py-4 rounded-xl font-bold text-lg transition-all hover:scale-105 shadow-lg">
               View All Services
-            </button>
+            </Link>
           </div>
         </div>
       </div>
