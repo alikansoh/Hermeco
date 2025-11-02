@@ -1,25 +1,10 @@
 // controllers/projectController.js
 import Project from '@/models/Project';
 import mongoose from 'mongoose';
-import formidable from 'formidable';
-import cloudinary from '@/lib/cloudinary';
 import dbConnect from '@/lib/dbConnect'; 
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-// Helper to parse form using Promise
-const parseForm = (req) =>
-  new Promise((resolve, reject) => {
-    const form = formidable({ multiples: true });
-    form.parse(req, (err, fields, files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
+// ❌ REMOVED: formidable and bodyParser config
+// Now we're receiving JSON with Cloudinary URLs only
 
 // 📌 Get all projects
 export const getProjects = async (req, res) => {
@@ -40,6 +25,7 @@ export const getProjectById = async (req, res) => {
     return res.status(400).json({ success: false, error: 'Invalid project ID' });
   }
   try {
+    await dbConnect();
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ success: false, error: 'Project not found' });
     return res.status(200).json({ success: true, data: project });
@@ -53,30 +39,24 @@ export const getProjectById = async (req, res) => {
 export const createProject = async (req, res) => {
   try {
     await dbConnect();
-    const { fields, files } = await parseForm(req);
+    
+    // Now receiving JSON with Cloudinary URLs already uploaded from client
+    const { title, description, date, featured, images } = req.body;
 
-    const fixField = (field) => (Array.isArray(field) ? field[0] : field);
-
-    let imageUrls = [];
-    if (files.images) {
-      const images = Array.isArray(files.images) ? files.images : [files.images];
-      const validImages = images.filter((img) => img && img.filepath);
-      if (validImages.length > 0) {
-        const uploadedImages = await Promise.all(
-          validImages.map((img) =>
-            cloudinary.uploader.upload(img.filepath, { folder: 'projects' })
-          )
-        );
-        imageUrls = uploadedImages.map((r) => r.secure_url);
-      }
+    // Validate required fields
+    if (!title || !description || !date) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Title, description, and date are required' 
+      });
     }
 
     const newProject = await Project.create({
-      title: fixField(fields.title),
-      description: fixField(fields.description),
-      date: new Date(fixField(fields.date)),
-      featured: fixField(fields.featured) === 'true',
-      images: imageUrls,
+      title,
+      description,
+      date: new Date(date),
+      featured: featured === 'true' || featured === true,
+      images: images || [], // Array of Cloudinary URLs
     });
 
     return res.status(201).json({ success: true, data: newProject });
@@ -95,34 +75,25 @@ export const updateProject = async (req, res) => {
 
   try {
     await dbConnect();
-    const { fields, files } = await parseForm(req);
-
-    const fixField = (field) => (Array.isArray(field) ? field[0] : field);
+    
+    // Receiving JSON with new Cloudinary URLs
+    const { title, description, date, featured, images } = req.body;
 
     const existingProject = await Project.findById(id);
-    if (!existingProject) return res.status(404).json({ success: false, error: 'Project not found' });
-
-    let imageUrls = existingProject.images;
-    if (files.images) {
-      const newImages = Array.isArray(files.images) ? files.images : [files.images];
-      const validImages = newImages.filter((img) => img && img.filepath);
-      if (validImages.length > 0) {
-        const uploaded = await Promise.all(
-          validImages.map((img) =>
-            cloudinary.uploader.upload(img.filepath, { folder: 'projects' })
-          )
-        );
-        imageUrls = uploaded.map((r) => r.secure_url);
-      }
+    if (!existingProject) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
     }
+
+    // Use new images if provided, otherwise keep existing
+    const imageUrls = images && images.length > 0 ? images : existingProject.images;
 
     const updatedProject = await Project.findByIdAndUpdate(
       id,
       {
-        title: fixField(fields.title),
-        description: fixField(fields.description),
-        date: new Date(fixField(fields.date)),
-        featured: fixField(fields.featured) === 'true',
+        title,
+        description,
+        date: new Date(date),
+        featured: featured === 'true' || featured === true,
         images: imageUrls,
       },
       { new: true, runValidators: true }
@@ -144,7 +115,9 @@ export const deleteProject = async (req, res) => {
   try {
     await dbConnect();
     const deleted = await Project.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ success: false, error: 'Project not found' });
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Project not found' });
+    }
     return res.status(200).json({ success: true, data: {} });
   } catch (error) {
     console.error('Error deleting project:', error);
