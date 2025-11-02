@@ -6,7 +6,7 @@ export const config = {
       sizeLimit: '20mb',
   },
   
-};
+  },
 }
 
 export default async function handler(req, res) {
