@@ -2,9 +2,12 @@ import { getProjectById, updateProject, deleteProject } from '@/controllers/proj
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: {
+      sizeLimit: '20mb',
   },
+  
 };
+}
 
 export default async function handler(req, res) {
   const { method } = req;
