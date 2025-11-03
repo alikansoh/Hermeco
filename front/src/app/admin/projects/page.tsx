@@ -537,11 +537,11 @@ export default function ProjectsAdminPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openForm(project)} className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                    <div className="flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => openForm(project)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => handleDelete(project._id!, project.title)} className="p-2 bg-red-50 text-red-600 rounded-lg">
+                      <button onClick={() => handleDelete(project._id!, project.title)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100">
                         <Trash2 size={16} />
                       </button>
                     </div>
