@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Slab } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Navbar from "./components/navbar";
 import CustomCursor from "./components/CustomCursor";
@@ -8,14 +9,12 @@ import FloatingContact from "./components/FloatingContact";
 import LayoutWrapper from "./components/LayoutWrapper";
 import { Toaster } from "react-hot-toast";
 
-
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
 
-// Heading font - Bold, sturdy, construction-appropriate
 const robotoSlab = Roboto_Slab({
   variable: "--font-roboto-slab",
   subsets: ["latin"],
@@ -24,7 +23,8 @@ const robotoSlab = Roboto_Slab({
 });
 
 export const metadata: Metadata = {
-  title: "Hermeco | Professional Home Renovation & Construction Services in London",
+  title:
+    "Hermeco | Professional Home Renovation & Construction Services in London",
   description:
     "Hermeco offers expert home renovation, remodeling, electrical, plumbing, painting, and gardening services across London. Quality work, reliable professionals, and competitive pricing.",
   keywords: [
@@ -41,7 +41,8 @@ export const metadata: Metadata = {
   creator: "Hermeco",
   publisher: "Hermeco",
   openGraph: {
-    title: "Hermeco | Professional Home Renovation & Construction Services in London",
+    title:
+      "Hermeco | Professional Home Renovation & Construction Services in London",
     description:
       "Expert home renovation, remodeling, electrical, plumbing, painting, and gardening services across London. Reliable professionals at competitive prices.",
     url: "https://hermeco.co.uk",
@@ -71,7 +72,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -79,11 +79,27 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Google Tag (gtag.js) */}
+        <Script
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=AW-17698647174"
+          strategy="afterInteractive"
+        />
+        <Script id="google-gtag" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-17698647174');
+          `}
+        </Script>
+      </head>
+
       <body className={`${inter.variable} ${robotoSlab.variable} antialiased`}>
-         <CustomCursor />
+        <CustomCursor />
         <LayoutWrapper>{children}</LayoutWrapper>
         <Toaster position="top-right" />
-
       </body>
     </html>
   );
