@@ -57,7 +57,14 @@ export const createProject = async (req, res) => {
     const fixField = (field) => (Array.isArray(field) ? field[0] : field);
 
     let imageUrls = [];
-    if (files.images) {
+
+    // ✅ Use image URLs sent from frontend if available
+    if (fields.images) {
+      const urls = Array.isArray(fields.images) ? fields.images : [fields.images];
+      imageUrls = urls;
+    } 
+    // Fallback to uploading small files from server
+    else if (files.images) {
       const images = Array.isArray(files.images) ? files.images : [files.images];
       const validImages = images.filter((img) => img && img.filepath);
       if (validImages.length > 0) {
@@ -102,7 +109,14 @@ export const updateProject = async (req, res) => {
     if (!existingProject) return res.status(404).json({ success: false, error: 'Project not found' });
 
     let imageUrls = existingProject.images;
-    if (files.images) {
+
+    // ✅ Use image URLs sent from frontend if available
+    if (fields.images) {
+      const urls = Array.isArray(fields.images) ? fields.images : [fields.images];
+      imageUrls = urls;
+    } 
+    // Fallback to uploading small files from server
+    else if (files.images) {
       const newImages = Array.isArray(files.images) ? files.images : [files.images];
       const validImages = newImages.filter((img) => img && img.filepath);
       if (validImages.length > 0) {
