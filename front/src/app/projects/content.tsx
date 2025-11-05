@@ -622,13 +622,34 @@ const ProjectPage: React.FC = () => {
 
   const PAGE_SIZE = viewMode === "list" ? 5 : 6;
 
+  // Helper: sort projects by nearest date to today (closest date first).
+  // Projects with invalid/missing date are pushed to the end.
+  const sortProjectsByNearestDate = (list: Project[]): Project[] => {
+    const now = Date.now();
+    return [...list].sort((a, b) => {
+      const ta = a.date ? new Date(a.date).getTime() : Number.POSITIVE_INFINITY;
+      const tb = b.date ? new Date(b.date).getTime() : Number.POSITIVE_INFINITY;
+
+      // If both are valid, sort by absolute distance to now (nearest first)
+      if (isFinite(ta) && isFinite(tb)) {
+        return Math.abs(ta - now) - Math.abs(tb - now);
+      }
+
+      // If one is invalid, push it later
+      if (!isFinite(ta) && isFinite(tb)) return 1;
+      if (isFinite(ta) && !isFinite(tb)) return -1;
+      return 0;
+    });
+  };
+
   // Fetch projects from API
   const fetchProjects = async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
       const data = await projectsApi.getAll();
-      setProjects(data);
+      // Apply nearest-date sorting here so downstream UI (slider, lists) see sorted projects
+      setProjects(sortProjectsByNearestDate(data));
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch projects';
       setError(errorMessage);
