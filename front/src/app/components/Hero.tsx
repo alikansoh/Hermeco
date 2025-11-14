@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState } from "react";
 import { ArrowRight, CheckCircle, Phone, Wrench, MessageSquare, Send, User, X } from "lucide-react";
+import Image from "next/image";
 
 interface FormData {
   fullName: string;
@@ -23,15 +24,14 @@ const HeroSection = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Memoize static arrays to prevent recreation on every render
-  const features = useMemo(() => [
+  const features = [
     "Licensed & Insured Professionals",
     "5+ Years Experience",
     "Professional Consultations",
     "Emergency Services Available",
-  ], []);
+  ];
 
-  const services = useMemo(() => [
+  const services = [
     "Complete Renovation",
     "Electrical Services",
     "Plumbing Services",
@@ -39,17 +39,16 @@ const HeroSection = () => {
     "Kitchen Remodeling",
     "Bathroom Remodeling",
     "Other",
-  ], []);
+  ];
 
-  // Memoize handlers to prevent recreation on every render
-  const handleInputChange = useCallback((
+  const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-  }, []);
+  };
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = async () => {
     if (!formData.fullName || !formData.telephone || !formData.service) {
       alert("Please fill in all required fields");
       return;
@@ -82,87 +81,20 @@ const HeroSection = () => {
     } finally {
       setLoading(false);
     }
-  }, [formData]);
-
-  const openModal = useCallback(() => setIsModalOpen(true), []);
-  const closeModal = useCallback(() => setIsModalOpen(false), []);
-
-  // Memoize form fields component to prevent unnecessary re-renders
-  const FormFields = useMemo(() => (
-    <>
-      <div className="relative">
-        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <input
-          type="text"
-          name="fullName"
-          placeholder="Your Name"
-          value={formData.fullName}
-          onChange={handleInputChange}
-          className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-        />
-      </div>
-
-      <div className="relative">
-        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <input
-          type="email"
-          name="email"
-          placeholder="Your Email"
-          value={formData.email}
-          onChange={handleInputChange}
-          className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-        />
-      </div>
-
-      <div className="relative">
-        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <input
-          type="tel"
-          name="telephone"
-          placeholder="Your Phone"
-          value={formData.telephone}
-          onChange={handleInputChange}
-          className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-        />
-      </div>
-
-      <div className="relative">
-        <Wrench className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <select
-          name="service"
-          value={formData.service}
-          onChange={handleInputChange}
-          className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 appearance-none"
-        >
-          <option value="">Select Service</option>
-          {services.map((s) => (
-            <option key={s} value={s} className="bg-gray-800 text-white">{s}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="relative">
-        <MessageSquare className="absolute left-4 top-4 text-gray-400 h-5 w-5" />
-        <textarea
-          name="details"
-          placeholder="Tell us about your project..."
-          value={formData.details}
-          onChange={handleInputChange}
-          rows={3}
-          className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 resize-none"
-        />
-      </div>
-    </>
-  ), [formData, handleInputChange, services]);
+  };
 
   return (
     <>
-      <section className="relative flex items-center overflow-hidden min-h-screen">
-        {/* Background Image - Use CSS background for better performance */}
+      <section className="relative flex items-center overflow-hidden">
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <div 
-            className="w-full h-full bg-cover bg-center"
-            style={{ backgroundImage: 'url(/hero.jpg)' }}
+          <Image
+            src="/hero.jpg"
+            alt="Professional construction and renovation services"
+            className="w-full h-full object-cover"
+            fill
+            priority
+            
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
@@ -185,8 +117,8 @@ const HeroSection = () => {
               </p>
 
               <div className="grid sm:grid-cols-2 gap-4">
-                {features.map((feature) => (
-                  <div key={feature} className="flex items-center gap-3 group">
+                {features.map((feature, i) => (
+                  <div key={i} className="flex items-center gap-3 group">
                     <CheckCircle className="h-6 w-6 text-yellow-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" />
                     <span className="text-gray-200 font-medium">{feature}</span>
                   </div>
@@ -209,7 +141,7 @@ const HeroSection = () => {
                   Call Now
                 </a>
                 <button
-                  onClick={openModal}
+                  onClick={() => setIsModalOpen(true)}
                   className="lg:hidden inline-flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 hover:scale-105 hover:from-amber-600 hover:to-orange-700 group"
                 >
                   get free quote
@@ -223,16 +155,77 @@ const HeroSection = () => {
               <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
                 <div className="text-center mb-8">
                   <h2 className="text-3xl font-bold text-white mb-2">get your free quote</h2>
-                  <p className="text-gray-300">Free quote take 1 minute</p>
+                  <p className="text-gray-300">Free quote take 1 minute </p>
                 </div>
 
                 <div className="space-y-6">
-                  {FormFields}
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="Your Name"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Your Email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <input
+                      type="tel"
+                      name="telephone"
+                      placeholder="Your Phone"
+                      value={formData.telephone}
+                      onChange={handleInputChange}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
+                    />
+                  </div>
+
+                  <div className="relative">
+                    <Wrench className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                    <select
+                      name="service"
+                      value={formData.service}
+                      onChange={handleInputChange}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 appearance-none"
+                    >
+                      <option value="">Select Service</option>
+                      {services.map((s, i) => (
+                        <option key={i} value={s} className="bg-gray-800 text-white">{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="relative">
+                    <MessageSquare className="absolute left-4 top-4 text-gray-400 h-5 w-5" />
+                    <textarea
+                      name="details"
+                      placeholder="Tell us about your project..."
+                      value={formData.details}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 resize-none"
+                    />
+                  </div>
 
                   <button
                     onClick={handleSubmit}
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group flex items-center justify-center gap-3"
                   >
                     {loading ? "Booking..." : "get free quote"}
                     <Send className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
@@ -244,15 +237,14 @@ const HeroSection = () => {
         </div>
       </section>
 
-      {/* Modal for Mobile - Only render when open */}
+      {/* Modal for Mobile */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/20 rounded-3xl shadow-2xl animate-slideUp max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
-              onClick={closeModal}
+              onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors duration-200 bg-white/10 hover:bg-white/20 rounded-full p-2"
-              aria-label="Close modal"
             >
               <X className="h-6 w-6" />
             </button>
@@ -309,8 +301,8 @@ const HeroSection = () => {
                     className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 appearance-none"
                   >
                     <option value="">Select Service</option>
-                    {services.map((s) => (
-                      <option key={s} value={s} className="bg-gray-800 text-white">{s}</option>
+                    {services.map((s, i) => (
+                      <option key={i} value={s} className="bg-gray-800 text-white">{s}</option>
                     ))}
                   </select>
                 </div>
