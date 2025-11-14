@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { ArrowRight, CheckCircle, Phone, Wrench, MessageSquare, Send, User, X } from "lucide-react";
+import Image from "next/image";
 
 interface FormData {
   fullName: string;
@@ -87,10 +88,12 @@ const HeroSection = () => {
       <section className="relative flex items-center overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/hero.jpg"
             alt="Professional construction and renovation services"
             className="w-full h-full object-cover"
+            fill
+            
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
