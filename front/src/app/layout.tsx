@@ -3,7 +3,6 @@ import { Inter, Roboto_Slab } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Navbar from "./components/navbar";
-import CustomCursor from "./components/CustomCursor";
 import Footer from "./components/Footer";
 import FloatingContact from "./components/FloatingContact";
 import LayoutWrapper from "./components/LayoutWrapper";
@@ -108,7 +107,6 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} ${robotoSlab.variable} antialiased`}>
-        <CustomCursor />
         <LayoutWrapper>{children}</LayoutWrapper>
         <Toaster position="top-right" />
       </body>
