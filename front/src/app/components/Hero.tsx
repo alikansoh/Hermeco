@@ -35,7 +35,6 @@ const cn = (...classes: (string | false | null | undefined)[]) =>
   classes.filter(Boolean).join(" ");
 
 // ─── SVG Preload Cache ────────────────────────────────────────────────────────
-// All SVGs are fetched once at module load and cached — zero delay on render
 const svgCache = new Map<string, string>();
 const svgPromises = new Map<string, Promise<string>>();
 
@@ -48,38 +47,35 @@ function loadSvg(iconName: string): Promise<string> {
     .then((text) => {
       if (!text.trim()) return "";
 
-      // 1. Set width/height to 100% so the parent <span> controls the size.
-      //    Mobile Safari collapses SVGs that have no explicit dimensions or
-      //    that have fixed px dimensions inside a flex container.
-      let cleaned = text
+      let cleaned = text;
+
+      // 1. Normalise width/height to 100% so the parent wrapper controls the size
+      cleaned = cleaned
         .replace(/(<svg[^>]*)\s+width="[^"]*"/i, '$1 width="100%"')
         .replace(/(<svg[^>]*)\s+height="[^"]*"/i, '$1 height="100%"');
 
-      // 2. If width/height attributes are missing entirely, inject them.
       if (!/width="/i.test(cleaned)) {
         cleaned = cleaned.replace(/(<svg)/i, '$1 width="100%" height="100%"');
       }
 
-      // 3. Normalise colours to currentColor so Tailwind text-* classes work.
-      //    - Replace any explicit stroke colour (but keep stroke="none")
-      //    - Replace any explicit fill colour (but keep fill="none")
-      //    - Handle both quoted hex (#xxx / #xxxxxx) and named colours
+      // 2. Strip ALL explicit fill/stroke colour attributes (keep "none" values).
+      //    This lets fill="currentColor" on the root <svg> cascade everywhere,
+      //    so the icon renders as a solid clean shape in whichever colour the
+      //    parent wrapper sets via its CSS `color` property.
       cleaned = cleaned
-        .replace(/stroke="(?!none\b)(?!currentColor\b)[^"]+"/gi, 'stroke="currentColor"')
-        .replace(/fill="(?!none\b)(?!currentColor\b)[^"]+"/gi, 'fill="currentColor"')
-        // Also handle inline style="fill:#000" or style="stroke:#000"
-        .replace(/style="[^"]*fill\s*:\s*(?!none)[^;}"]+;?[^"]*"/gi, (m) =>
-          m.replace(/fill\s*:\s*(?!none)[^;}"]+/gi, "fill:currentColor")
-        )
-        .replace(/style="[^"]*stroke\s*:\s*(?!none)[^;}"]+;?[^"]*"/gi, (m) =>
-          m.replace(/stroke\s*:\s*(?!none)[^;}"]+/gi, "stroke:currentColor")
-        );
+        .replace(/\s+stroke="(?!none\b)[^"]*"/gi, "")
+        .replace(/\s+fill="(?!none\b)[^"]*"/gi, "")
+        // Also handle inline style="fill:#xxx" or style="stroke:#xxx"
+        .replace(/style="([^"]*)fill\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"')
+        .replace(/style="([^"]*)stroke\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"');
 
-      // 4. Remove any <style> blocks (svgrepo sometimes embeds class-based fills)
+      // 3. Remove embedded <style> blocks and leftover class attributes
       cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-
-      // 5. Remove class attributes (leftover from stripped <style> blocks)
       cleaned = cleaned.replace(/\s+class="[^"]*"/gi, "");
+
+      // 4. Inject fill="currentColor" onto the root <svg> element so every
+      //    child path inherits the colour set by the wrapper's CSS `color`.
+      cleaned = cleaned.replace(/(<svg)([^>]*>)/i, '$1 fill="currentColor"$2');
 
       svgCache.set(iconName, cleaned);
       return cleaned;
@@ -93,7 +89,6 @@ function loadSvg(iconName: string): Promise<string> {
   return p;
 }
 
-// Collect every unique icon name from the issue tree recursively
 function collectIcons(nodes: IssueNode[]): string[] {
   const names: string[] = [];
   const walk = (list: IssueNode[]) => {
@@ -106,7 +101,6 @@ function collectIcons(nodes: IssueNode[]): string[] {
   return [...new Set(names)];
 }
 
-// Pre-fetch all icons before first render — called once at module level
 function preloadAllIcons(nodes: IssueNode[]) {
   collectIcons(nodes).forEach(loadSvg);
 }
@@ -114,50 +108,62 @@ function preloadAllIcons(nodes: IssueNode[]) {
 preloadAllIcons(issueTree as IssueNode[]);
 
 // ─── Icon Component ───────────────────────────────────────────────────────────
-// Uses cache-first: if already loaded → renders synchronously (no flash).
-// If still loading → renders a blank placeholder the same size, then swaps in.
+// KEY FIX: renders the FULL cached SVG string via dangerouslySetInnerHTML on a
+// wrapper <span>.  We no longer extract inner paths and re-wrap them — that old
+// approach applied wrong defaults (fill="none", stroke="currentColor") that
+// broke any icon using filled shapes instead of strokes.
+//
+// The `color` prop sets the CSS `color` on the wrapper span; because the SVG
+// root now has fill="currentColor", every path inherits it automatically.
 const Icon: React.FC<{
   name?: string;
   size?: number;
   className?: string;
   style?: React.CSSProperties;
-}> = ({ name, size = 48, className, style }) => {
+  color?: string;
+}> = ({ name, size = 48, className, style, color = "#1e293b" }) => {
   const cached = name ? svgCache.get(name) : undefined;
-  const [svg, setSvg] = useState<string>(cached ?? "");
+  const [svgHtml, setSvgHtml] = useState<string>(cached ?? "");
 
   useEffect(() => {
     if (!name) return;
     if (svgCache.has(name)) {
-      setSvg(svgCache.get(name)!);
+      setSvgHtml(svgCache.get(name)!);
       return;
     }
     let cancelled = false;
-    loadSvg(name).then((s) => { if (!cancelled) setSvg(s); });
-    return () => { cancelled = true; };
+    loadSvg(name).then((s) => {
+      if (!cancelled) setSvgHtml(s);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [name]);
 
-  const sizeStyle: React.CSSProperties = {
+  const wrapperStyle: React.CSSProperties = {
+    display: "block",
     width: size,
     height: size,
     minWidth: size,
     minHeight: size,
-    display: "block",
     flexShrink: 0,
-    overflow: "visible",
     lineHeight: 0,
+    // CSS color → currentColor → SVG fill inherits it
+    color,
     ...style,
   };
 
-  if (!svg) {
-    return <span style={sizeStyle} aria-hidden />;
+  if (!svgHtml) {
+    // Same-size invisible placeholder to prevent layout shift while loading
+    return <span style={wrapperStyle} className={className} aria-hidden />;
   }
 
   return (
     <span
+      style={wrapperStyle}
       className={className}
-      style={sizeStyle}
       aria-hidden
-      dangerouslySetInnerHTML={{ __html: svg }}
+      dangerouslySetInnerHTML={{ __html: svgHtml }}
     />
   );
 };
@@ -206,7 +212,10 @@ const StepIndicator: React.FC<{ step: number }> = ({ step }) => {
             </div>
             {i < 2 && (
               <div
-                className={cn("w-10 h-px mx-2 transition-all duration-500", !done && "bg-slate-200")}
+                className={cn(
+                  "w-10 h-px mx-2 transition-all duration-500",
+                  !done && "bg-slate-200"
+                )}
                 style={done ? { background: GOLD, opacity: 0.6 } : {}}
               />
             )}
@@ -231,7 +240,7 @@ const CategoryCard: React.FC<{
         onClick={() => onSelect(item)}
         aria-pressed={isSel}
         className={cn(
-          "group relative flex flex-col items-center gap-3 pt-6 pb-5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
+          "group relative flex flex-col items-center gap-4 pt-8 pb-6 px-4 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
           isSel
             ? "border-red-400 bg-red-50 shadow-lg"
             : "border-red-200 bg-red-50/30 hover:border-red-300 hover:shadow-md hover:-translate-y-0.5"
@@ -241,16 +250,17 @@ const CategoryCard: React.FC<{
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
         </div>
+        {/* Larger icon container: 88×88 px */}
         <div
           className={cn(
-            "rounded-xl flex items-center justify-center transition-all",
+            "rounded-2xl flex items-center justify-center transition-all",
             isSel ? "bg-red-100" : "bg-red-50/80"
           )}
-          style={{ width: 72, height: 72 }}
+          style={{ width: 88, height: 88 }}
         >
-          <Icon name={item.icon} size={48} className="text-red-500" />
+          <Icon name={item.icon} size={54} color="#ef4444" />
         </div>
-        <span className="text-[11.5px] font-bold text-center text-red-500 leading-snug">
+        <span className="text-[12px] font-bold text-center text-red-500 leading-snug">
           {item.label}
         </span>
       </button>
@@ -262,7 +272,7 @@ const CategoryCard: React.FC<{
       onClick={() => onSelect(item)}
       aria-pressed={isSel}
       className={cn(
-        "group relative flex flex-col items-center gap-3 pt-6 pb-5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
+        "group relative flex flex-col items-center gap-4 pt-8 pb-6 px-4 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
         !isSel &&
           "border-slate-100 bg-white hover:shadow-md hover:-translate-y-0.5 hover:border-[rgba(201,168,76,0.3)]"
       )}
@@ -283,25 +293,26 @@ const CategoryCard: React.FC<{
           style={{ background: GOLD }}
         />
       )}
+      {/* Larger icon container: 88×88 px */}
       <div
         className={cn(
-          "rounded-xl flex items-center justify-center transition-all duration-200",
-          isSel ? "bg-[rgba(201,168,76,0.18)]" : "bg-slate-50 group-hover:bg-amber-50/60"
+          "rounded-2xl flex items-center justify-center transition-all duration-200",
+          isSel
+            ? "bg-[rgba(201,168,76,0.15)]"
+            : "bg-slate-50 group-hover:bg-amber-50/60"
         )}
-        style={{ width: 72, height: 72 }}
+        style={{ width: 88, height: 88 }}
       >
-        <Icon
-          name={item.icon}
-          size={48}
-          className={cn(
-            "transition-all duration-200",
-            isSel ? "text-[#c9a84c]" : "text-slate-500 group-hover:text-amber-600/70"
-          )}
-        />
+        {/*
+          Color:
+          - Selected  → gold accent
+          - Default   → clean near-black (#1e293b) — crisp, legible, no blue tint
+        */}
+        <Icon name={item.icon} size={54} color={isSel ? GOLD : "#1e293b"} />
       </div>
       <span
         className={cn(
-          "text-[11.5px] font-semibold text-center leading-snug px-0.5 transition-colors",
+          "text-[12px] font-semibold text-center leading-snug px-0.5 transition-colors",
           isSel ? "text-slate-900" : "text-slate-600"
         )}
       >
@@ -552,10 +563,14 @@ export default function MaintenanceWizard() {
     updateShadows();
   }, [step, filtered.length, stack.length, updateShadows]);
 
-  // Pre-fetch next level icons when hovering over a category
-  const prefetchChildren = useCallback((node: IssueNode) => {
-    if (node.children) {
-      node.children.forEach((c) => { if (c.icon) loadSvg(c.icon); });
+  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const atTop = el.scrollTop === 0;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
+      e.preventDefault();
+      window.scrollBy({ top: e.deltaY, behavior: "auto" });
     }
   }, []);
 
@@ -630,10 +645,11 @@ export default function MaintenanceWizard() {
   }, [reset]);
 
   const showBack = step > 1 || depth > 0;
+  // Fewer columns → each card is wider and more prominent
   const gridCols =
     depth === 0
-      ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-5"
-      : "grid-cols-3 sm:grid-cols-4";
+      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
+      : "grid-cols-2 sm:grid-cols-3";
 
   const headerCopy: Record<number, { h: string; sub: string }> = {
     1: {
@@ -916,8 +932,7 @@ export default function MaintenanceWizard() {
                   right: 0,
                   top: 0,
                   height: 24,
-                  background:
-                    "linear-gradient(to bottom, rgba(0,0,0,0.04), transparent)",
+                  background: "linear-gradient(to bottom, rgba(0,0,0,0.04), transparent)",
                   opacity: showTopShadow ? 1 : 0,
                   transition: "opacity 180ms",
                   zIndex: 10,
@@ -932,8 +947,7 @@ export default function MaintenanceWizard() {
                   right: 0,
                   bottom: 0,
                   height: 28,
-                  background:
-                    "linear-gradient(to top, rgba(0,0,0,0.04), transparent)",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.04), transparent)",
                   opacity: showBottomShadow ? 1 : 0,
                   transition: "opacity 180ms",
                   zIndex: 10,
@@ -943,7 +957,8 @@ export default function MaintenanceWizard() {
               <div
                 ref={bodyRef}
                 onScroll={updateShadows}
-                className="overflow-y-auto overscroll-contain px-7 py-6 wizard-scroll"
+                onWheel={handleWheel}
+                className="overflow-y-auto px-7 py-6 wizard-scroll"
                 style={{ maxHeight: 640 }}
               >
                 {step !== 3 ? (
@@ -955,7 +970,7 @@ export default function MaintenanceWizard() {
                         onSelect={pick}
                       />
                     ) : (
-                      <div className={`grid gap-3 ${gridCols}`}>
+                      <div className={`grid gap-4 ${gridCols}`}>
                         {filtered.map((item) => (
                           <CategoryCard
                             key={item.id}
@@ -985,9 +1000,7 @@ export default function MaintenanceWizard() {
                         <span className="text-sm font-semibold">
                           No results for &quot;{search}&quot;
                         </span>
-                        <span className="text-[12px]">
-                          Try a different search term
-                        </span>
+                        <span className="text-[12px]">Try a different search term</span>
                       </div>
                     )}
                   </>
@@ -1030,11 +1043,7 @@ export default function MaintenanceWizard() {
                                   color: "rgba(34,34,34,0.8)",
                                 }}
                               >
-                                <Icon
-                                  name={n.icon}
-                                  size={16}
-                                  className="text-amber-700/70"
-                                />
+                                <Icon name={n.icon} size={16} color="#92400e" />
                                 {n.label}
                               </span>
                             </React.Fragment>
@@ -1087,10 +1096,7 @@ export default function MaintenanceWizard() {
                               placeholder={placeholder}
                               value={formData[key]}
                               onChange={(e) =>
-                                setFormData((p) => ({
-                                  ...p,
-                                  [key]: e.target.value,
-                                }))
+                                setFormData((p) => ({ ...p, [key]: e.target.value }))
                               }
                               className={`w-full rounded-xl py-3.5 text-[14px] outline-none transition-all ${
                                 hasIcon ? "pl-10 pr-4" : "px-4"
@@ -1138,46 +1144,30 @@ export default function MaintenanceWizard() {
                     <div className="mt-5">
                       <button
                         onClick={handleSubmit}
-                        disabled={
-                          loading ||
-                          !formData.fullName ||
-                          !formData.telephone
-                        }
+                        disabled={loading || !formData.fullName || !formData.telephone}
                         className="flex items-center justify-center gap-2.5 w-full py-4 rounded-2xl font-bold text-[14px] transition-all"
                         style={{
                           background:
-                            !loading &&
-                            formData.fullName &&
-                            formData.telephone
+                            !loading && formData.fullName && formData.telephone
                               ? `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`
                               : "rgba(201,168,76,0.18)",
                           color:
-                            !loading &&
-                            formData.fullName &&
-                            formData.telephone
+                            !loading && formData.fullName && formData.telephone
                               ? "#1a1207"
                               : "rgba(34,34,34,0.4)",
                           boxShadow:
-                            !loading &&
-                            formData.fullName &&
-                            formData.telephone
+                            !loading && formData.fullName && formData.telephone
                               ? "0 8px 32px rgba(201,168,76,0.25)"
                               : "none",
                           cursor:
-                            loading ||
-                            !formData.fullName ||
-                            !formData.telephone
+                            loading || !formData.fullName || !formData.telephone
                               ? "not-allowed"
                               : "pointer",
                         }}
                       >
                         {loading ? (
                           <>
-                            <svg
-                              className="animate-spin w-4 h-4"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                            >
+                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                               <circle
                                 cx="12"
                                 cy="12"
