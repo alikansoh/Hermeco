@@ -1,0 +1,334 @@
+
+[
+    {
+      "id": "bathroom",
+      "label": "Bathroom & Toilet",
+      "icon": "bathroom",
+      "color": "blue",
+      "children": [
+        {
+          "id": "bathroom-basin",
+          "label": "Basin",
+          "icon": "Droplets",
+          "children": [
+            {
+              "id": "basin-on-brackets",
+              "label": "Basin on Brackets",
+              "icon": "Wrench",
+              "children": [
+                { "id": "basin-blocked-brackets", "label": "Basin blocked" },
+                { "id": "basin-broken-brackets", "label": "Broken basin brackets" },
+                { "id": "basin-cracked-brackets", "label": "Broken or cracked basin" },
+                { "id": "basin-loose-brackets", "label": "Loose basin brackets" },
+                { "id": "basin-brackets-other", "label": "Other" }
+              ]
+            },
+            { "id": "basin-on-pedestal", "label": "Basin on Pedestal", "icon": "Circle" },
+            { "id": "basin-between-wall", "label": "Gap between basin & wall", "icon": "MoveHorizontal" },
+            { "id": "basin-pipe-leaking", "label": "Pipe leaking", "icon": "Droplets" },
+            { "id": "basin-plug-hole", "label": "Plug hole", "icon": "CircleDot" },
+            { "id": "basin-plug-chain", "label": "Plug chain", "icon": "Link" },
+            { "id": "basin-tap", "label": "Tap", "icon": "Gauge" },
+            { "id": "basin-tiles", "label": "Tiles", "icon": "Grid3x3" },
+            { "id": "basin-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        {
+          "id": "bathroom-bath",
+          "label": "Bath",
+          "icon": "Bath",
+          "children": [
+            { "id": "bath-sealant", "label": "Sealant / Grouting", "icon": "Layers" },
+            { "id": "bath-tap", "label": "Tap", "icon": "Gauge" },
+            { "id": "bath-waste", "label": "Waste / Plug", "icon": "CircleDot" },
+            { "id": "bath-leak", "label": "Leak", "icon": "Droplets" },
+            { "id": "bath-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        {
+          "id": "bathroom-electric-shower",
+          "label": "Electric Shower",
+          "icon": "Zap",
+          "children": [
+            { "id": "electric-shower-no-hot-water", "label": "No hot water", "icon": "Thermometer" },
+            { "id": "electric-shower-not-working", "label": "Not working at all", "icon": "XCircle" },
+            { "id": "electric-shower-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        {
+          "id": "bathroom-extractor",
+          "label": "Extractor Fan",
+          "icon": "Wind",
+          "children": [
+            { "id": "extractor-noisy", "label": "Noisy", "icon": "Volume2" },
+            { "id": "extractor-not-working", "label": "Not working", "icon": "XCircle" },
+            { "id": "extractor-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        {
+          "id": "bathroom-shower",
+          "label": "Shower",
+          "icon": "ShowerHead",
+          "children": [
+            { "id": "shower-leak", "label": "Leak", "icon": "Droplets" },
+            { "id": "shower-head", "label": "Shower head / Hose", "icon": "ShowerHead" },
+            { "id": "shower-controls", "label": "Taps / Controls", "icon": "SlidersHorizontal" },
+            { "id": "shower-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        {
+          "id": "bathroom-wc",
+          "label": "WC / Toilet",
+          "icon": "Toilet",
+          "children": [
+            { "id": "wc-flush", "label": "Flush issue", "icon": "RotateCcw" },
+            { "id": "wc-leak", "label": "Leak", "icon": "Droplets" },
+            { "id": "wc-seat", "label": "Seat broken", "icon": "Wrench" },
+            { "id": "wc-blocked", "label": "Toilet blocked", "icon": "Ban" },
+            { "id": "wc-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        { "id": "bathroom-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen",
+      "icon": "kitchen",
+      "color": "orange",
+      "children": [
+        {
+          "id": "kitchen-appliances",
+          "label": "Appliances",
+          "icon": "Microwave",
+          "children": [
+            { "id": "appliance-fridge", "label": "Fridge / Freezer", "icon": "Thermometer" },
+            { "id": "appliance-oven", "label": "Oven / Hob", "icon": "Flame" },
+            { "id": "appliance-dishwasher", "label": "Dishwasher", "icon": "Waves" },
+            { "id": "appliance-microwave", "label": "Microwave", "icon": "Microwave" },
+            { "id": "appliance-extractor", "label": "Extractor Hood", "icon": "Wind" },
+            { "id": "appliance-other", "label": "Other", "icon": "MoreHorizontal" }
+          ]
+        },
+        { "id": "kitchen-sink", "label": "Sink", "icon": "Droplets" },
+        { "id": "kitchen-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "heating",
+      "label": "Heating & Boiler",
+      "icon": "heating",
+      "color": "red",
+      "children": [
+        { "id": "heating-no-heating", "label": "No heating", "icon": "ThermometerSnowflake" },
+        { "id": "heating-rad-leak", "label": "Radiator leaking", "icon": "Droplets" },
+        { "id": "heating-timer", "label": "Timer / Control issue", "icon": "Clock" },
+        { "id": "heating-boiler-noise", "label": "Boiler making noise", "icon": "Volume2" },
+        { "id": "heating-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "water-leaks",
+      "label": "Water & Leaks",
+      "icon": "water",
+      "color": "cyan",
+      "children": [
+        { "id": "water-ceiling-leak", "label": "Ceiling leak", "icon": "CloudRain" },
+        { "id": "water-pipe-burst", "label": "Pipe burst", "icon": "AlertTriangle" },
+        { "id": "water-damp", "label": "Visible damp", "icon": "Waves" },
+        { "id": "water-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "doors",
+      "label": "Doors & Locks",
+      "icon": "door",
+      "color": "amber",
+      "children": [
+        { "id": "doors-front-lock", "label": "Front door lock", "icon": "Lock" },
+        { "id": "doors-internal", "label": "Internal door", "icon": "DoorClosed" },
+        { "id": "doors-garage", "label": "Garage door", "icon": "Warehouse" },
+        { "id": "doors-key-snapped", "label": "Key snapped", "icon": "KeyRound" },
+        { "id": "doors-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "lighting",
+      "label": "Lighting",
+      "icon": "light",
+      "color": "yellow",
+      "children": [
+        { "id": "lighting-internal", "label": "Internal lights", "icon": "Lamp" },
+        { "id": "lighting-external", "label": "External lights", "icon": "Sun" },
+        { "id": "lighting-bulb", "label": "Bulb replacement", "icon": "Lightbulb" },
+        { "id": "lighting-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "window",
+      "label": "Windows",
+      "icon": "window",
+      "color": "sky",
+      "children": [
+        { "id": "window-broken-glass", "label": "Broken glass", "icon": "Layers" },
+        { "id": "window-handle-lock", "label": "Handle / Lock issue", "icon": "Lock" },
+        { "id": "window-draft", "label": "Draft / Seal issue", "icon": "Wind" },
+        { "id": "window-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "exterior",
+      "label": "Exterior & Garden",
+      "icon": "Trees",
+      "color": "green",
+      "children": [
+        { "id": "exterior-fence", "label": "Fence / Gate", "icon": "SquareDashedBottom" },
+        { "id": "exterior-garden", "label": "Garden maintenance", "icon": "Leaf" },
+        { "id": "exterior-paving", "label": "Paving / Patio", "icon": "Grid3x3" },
+        { "id": "exterior-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "laundry",
+      "label": "Laundry",
+      "icon": "WashingMachine",
+      "color": "violet",
+      "children": [
+        { "id": "laundry-washing-machine", "label": "Washing machine", "icon": "WashingMachine" },
+        { "id": "laundry-tumble-dryer", "label": "Tumble dryer", "icon": "Wind" },
+        { "id": "laundry-washer-dryer", "label": "Washer dryer combo", "icon": "RefreshCw" },
+        { "id": "laundry-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "furniture",
+      "label": "Furniture",
+      "icon": "Sofa",
+      "color": "brown"
+    },
+    {
+      "id": "electricity",
+      "label": "Electricity",
+      "icon": "Zap",
+      "color": "yellow",
+      "children": [
+        { "id": "electricity-power-cut", "label": "Power cut / Tripping", "icon": "ZapOff" },
+        { "id": "electricity-socket", "label": "Socket / Switch issue", "icon": "PlugZap" },
+        { "id": "electricity-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "hot-water",
+      "label": "Hot Water",
+      "icon": "Thermometer",
+      "color": "rose",
+      "children": [
+        { "id": "hot-water-none", "label": "No hot water", "icon": "ThermometerSnowflake" },
+        { "id": "hot-water-temperature", "label": "Water too hot / cold", "icon": "ThermometerSun" },
+        { "id": "hot-water-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "alarms",
+      "label": "Alarms & Detectors",
+      "icon": "Bell",
+      "color": "purple",
+      "children": [
+        { "id": "alarm-beeping", "label": "Beeping / Chirping", "icon": "Volume2" },
+        { "id": "alarm-not-testing", "label": "Not testing correctly", "icon": "ShieldAlert" },
+        { "id": "alarm-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "pests",
+      "label": "Pests & Vermin",
+      "icon": "Bug",
+      "color": "lime",
+      "children": [
+        { "id": "pests-mice", "label": "Mice / Rats", "icon": "Mouse" },
+        { "id": "pests-insects", "label": "Insects / Wasps", "icon": "Bug" },
+        { "id": "pests-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "roof",
+      "label": "Roof",
+      "icon": "Home",
+      "color": "stone",
+      "children": [
+        { "id": "roof-leaking", "label": "Leaking roof", "icon": "CloudRain" },
+        { "id": "roof-guttering", "label": "Guttering", "icon": "AlignBottom" },
+        { "id": "roof-tiles", "label": "Loose / missing tiles", "icon": "LayoutGrid" },
+        { "id": "roof-other", "label": "Other", "icon": "MoreHorizontal" }
+      ]
+    },
+    {
+      "id": "communal",
+      "label": "Communal Areas",
+      "icon": "Users",
+      "color": "indigo"
+    },
+    {
+      "id": "audiovisual",
+      "label": "Audiovisual",
+      "icon": "Tv",
+      "color": "slate"
+    },
+    {
+      "id": "utility-meters",
+      "label": "Utility Meters",
+      "icon": "Gauge",
+      "color": "teal"
+    },
+    {
+      "id": "internet",
+      "label": "Internet",
+      "icon": "Wifi",
+      "color": "blue"
+    },
+    {
+      "id": "stairs",
+      "label": "Stairs",
+      "icon": "MoveUp",
+      "color": "zinc"
+    },
+    {
+      "id": "property-services",
+      "label": "Property Services",
+      "icon": "Settings",
+      "color": "gray"
+    },
+    {
+      "id": "air-conditioning",
+      "label": "Air Conditioning",
+      "icon": "AirVent",
+      "color": "cyan"
+    },
+    {
+      "id": "other-general",
+      "label": "Other",
+      "icon": "CircleHelp",
+      "color": "gray"
+    },
+    {
+      "id": "smell-gas",
+      "label": "Smell of Gas",
+      "icon": "AlertTriangle",
+      "color": "red",
+      "emergency": true
+    },
+    {
+      "id": "smell-oil",
+      "label": "Smell of Oil",
+      "icon": "AlertTriangle",
+      "color": "red",
+      "emergency": true
+    },
+    {
+      "id": "fire",
+      "label": "Fire",
+      "icon": "Flame",
+      "color": "red",
+      "emergency": true
+    }
+  ]

@@ -1,369 +1,1216 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import { ArrowRight, CheckCircle, Phone, Wrench, MessageSquare, Send, User, X } from "lucide-react";
-import Image from "next/image";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import issueTree from "./issues.json";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface IssueNode {
+  id: string;
+  label: string;
+  icon?: string;
+  color?: string;
+  emergency?: boolean;
+  children?: IssueNode[];
+}
+
+interface StackFrame {
+  items: IssueNode[];
+  selected: IssueNode | null;
+  label: string;
+}
 
 interface FormData {
   fullName: string;
-  email: string;
   telephone: string;
-  service: string;
   details: string;
 }
 
-const HeroSection = () => {
-  const [formData, setFormData] = useState<FormData>({
-    fullName: "",
-    email: "",
-    telephone: "",
-    service: "",
-    details: "",
-  });
+// ─── Constants ────────────────────────────────────────────────────────────────
+const GOLD = "#c9a84c";
+const GOLD_LIGHT = "#e8c96a";
+const GOLD_TRANSPARENT = "rgba(201,168,76,0.12)";
+const GOLD_BORDER = "rgba(201,168,76,0.25)";
 
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+const cn = (...classes: (string | false | null | undefined)[]) =>
+  classes.filter(Boolean).join(" ");
 
-  const features = [
-    "Licensed & Insured Professionals",
-    "5+ Years Experience",
-    "Professional Consultations",
-    "Emergency Services Available",
-  ];
+// ─── SVG Preload Cache ────────────────────────────────────────────────────────
+// All SVGs are fetched once at module load and cached — zero delay on render
+const svgCache = new Map<string, string>();
+const svgPromises = new Map<string, Promise<string>>();
 
-  const services = [
-    "Complete Renovation",
-    "Electrical Services",
-    "Plumbing Services",
-    "Landscaping",
-    "Kitchen Remodeling",
-    "Bathroom Remodeling",
-    "Other",
-  ];
+function loadSvg(iconName: string): Promise<string> {
+  if (svgCache.has(iconName)) return Promise.resolve(svgCache.get(iconName)!);
+  if (svgPromises.has(iconName)) return svgPromises.get(iconName)!;
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const p = fetch(`/icons/${iconName}.svg`)
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((text) => {
+      // Strip width/height attrs, normalise stroke colour to currentColor
+      const cleaned = text
+        .replace(/\s*(width|height)="[^"]*"/g, "")
+        .replace(/stroke="(?!none)[^"]*"/g, 'stroke="currentColor"')
+        .replace(/fill="(?!none|currentColor)[^"]*"/g, 'fill="currentColor"');
+      svgCache.set(iconName, cleaned);
+      return cleaned;
+    })
+    .catch(() => {
+      svgCache.set(iconName, "");
+      return "";
+    });
+
+  svgPromises.set(iconName, p);
+  return p;
+}
+
+// Collect every unique icon name from the issue tree recursively
+function collectIcons(nodes: IssueNode[]): string[] {
+  const names: string[] = [];
+  const walk = (list: IssueNode[]) => {
+    for (const n of list) {
+      if (n.icon) names.push(n.icon);
+      if (n.children) walk(n.children);
+    }
   };
+  walk(nodes);
+  return [...new Set(names)];
+}
 
-  const handleSubmit = async () => {
-    if (!formData.fullName || !formData.telephone || !formData.service) {
-      alert("Please fill in all required fields");
+// Pre-fetch all icons before first render — called once at module level
+function preloadAllIcons(nodes: IssueNode[]) {
+  collectIcons(nodes).forEach(loadSvg);
+}
+
+preloadAllIcons(issueTree as IssueNode[]);
+
+// ─── Icon Component ───────────────────────────────────────────────────────────
+// Uses cache-first: if already loaded → renders synchronously (no flash).
+// If still loading → renders a blank placeholder the same size, then swaps in.
+const Icon: React.FC<{
+  name?: string;
+  size?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}> = ({ name, size = 48, className, style }) => {
+  const cached = name ? svgCache.get(name) : undefined;
+  const [svg, setSvg] = useState<string>(cached ?? "");
+
+  useEffect(() => {
+    if (!name) return;
+    if (svgCache.has(name)) {
+      setSvg(svgCache.get(name)!);
       return;
     }
+    let cancelled = false;
+    loadSvg(name).then((s) => { if (!cancelled) setSvg(s); });
+    return () => { cancelled = true; };
+  }, [name]);
 
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data: { message?: string } = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Something went wrong");
-
-      alert("Booking created successfully!");
-      setFormData({ fullName: "", email: "", telephone: "", service: "", details: "" });
-      setIsModalOpen(false);
-    } catch (err: unknown) {
-      console.error(err);
-
-      if (err instanceof Error) {
-        alert(err.message);
-      } else {
-        alert("Failed to create booking");
-      }
-    } finally {
-      setLoading(false);
-    }
+  const sizeStyle: React.CSSProperties = {
+    width: size,
+    height: size,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    ...style,
   };
 
+  if (!svg) {
+    // Invisible placeholder — same size, no layout shift
+    return <span style={sizeStyle} aria-hidden />;
+  }
+
   return (
-    <>
-      <section className="relative flex items-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/hero.jpg"
-            alt="Professional construction and renovation services"
-            className="w-full h-full object-cover"
-            fill
-            priority
-            
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Column */}
-            <div className="text-white space-y-8">
-              <h1 className="text-5xl md:text-5xl lg:text-7xl font-bold leading-tight">
-                Transform Your
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-400 drop-shadow-lg">
-                  Dream Home
-                </span>
-                Into Reality
-              </h1>
-              <p className="text-xl md:text-2xl text-gray-200 leading-relaxed max-w-2xl font-light">
-                From complete renovations to specialized electrical, plumbing, and landscaping services. We bring expertise, quality, and reliability to every project.
-              </p>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {features.map((feature, i) => (
-                  <div key={i} className="flex items-center gap-3 group">
-                    <CheckCircle className="h-6 w-6 text-yellow-400 flex-shrink-0 group-hover:scale-110 transition-transform duration-200" />
-                    <span className="text-gray-200 font-medium">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <a
-                  href="/projects"
-                  className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105 hover:from-yellow-600 hover:to-amber-700 group"
-                >
-                  Our Work
-                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform duration-200" />
-                </a>
-                <a
-                  href="tel:+447300825333"
-                  className="inline-flex items-center justify-center gap-3 bg-white/15 backdrop-blur-md text-white px-10 py-5 rounded-2xl font-bold text-lg border border-white/30 hover:bg-white/25 hover:border-white/50 transition-all duration-300 group"
-                >
-                  <Phone className="h-6 w-6 group-hover:rotate-12 transition-transform duration-200" />
-                  Call Now
-                </a>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="lg:hidden inline-flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-amber-500/25 transition-all duration-300 hover:scale-105 hover:from-amber-600 hover:to-orange-700 group"
-                >
-                  get free quote
-                  <ArrowRight className="h-6 w-6 group-hover:translate-x-1 transition-transform duration-200" />
-                </button>
-              </div>
-            </div>
-
-            {/* Right Column - Booking Form (Large Screen Only) */}
-            <div className="lg:justify-self-end w-full max-w-lg hidden lg:block">
-              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl">
-                <div className="text-center mb-8">
-                  <h2 className="text-3xl font-bold text-white mb-2">get your free quote</h2>
-                  <p className="text-gray-300">Free quote take 1 minute </p>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="text"
-                      name="fullName"
-                      placeholder="Your Name"
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="email"
-                      name="email"
-                      placeholder="Your Email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="tel"
-                      name="telephone"
-                      placeholder="Your Phone"
-                      value={formData.telephone}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                    />
-                  </div>
-
-                  <div className="relative">
-                    <Wrench className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <select
-                      name="service"
-                      value={formData.service}
-                      onChange={handleInputChange}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 appearance-none"
-                    >
-                      <option value="">Select Service</option>
-                      {services.map((s, i) => (
-                        <option key={i} value={s} className="bg-gray-800 text-white">{s}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="relative">
-                    <MessageSquare className="absolute left-4 top-4 text-gray-400 h-5 w-5" />
-                    <textarea
-                      name="details"
-                      placeholder="Tell us about your project..."
-                      value={formData.details}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 resize-none"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="w-full bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group flex items-center justify-center gap-3"
-                  >
-                    {loading ? "Booking..." : "get free quote"}
-                    <Send className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Modal for Mobile */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/20 rounded-3xl shadow-2xl animate-slideUp max-h-[90vh] overflow-y-auto">
-            {/* Close Button */}
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-white transition-colors duration-200 bg-white/10 hover:bg-white/20 rounded-full p-2"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            <div className="p-6 sm:p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">get your free quote</h2>
-                <p className="text-gray-300">Free quote take 1 minute</p>
-              </div>
-
-              <div className="space-y-5">
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-yellow-400 h-5 w-5 z-10" />
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Your Name"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                  />
-                </div>
-
-                <div className="relative">
-                  <MessageSquare className="absolute left-4 top-1/2 transform -translate-y-1/2 text-yellow-400 h-5 w-5 z-10" />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Your Email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                  />
-                </div>
-
-                <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-yellow-400 h-5 w-5 z-10" />
-                  <input
-                    type="tel"
-                    name="telephone"
-                    placeholder="Your Phone"
-                    value={formData.telephone}
-                    onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200"
-                  />
-                </div>
-
-                <div className="relative">
-                  <Wrench className="absolute left-4 top-1/2 transform -translate-y-1/2 text-yellow-400 h-5 w-5 z-10" />
-                  <select
-                    name="service"
-                    value={formData.service}
-                    onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 appearance-none"
-                  >
-                    <option value="">Select Service</option>
-                    {services.map((s, i) => (
-                      <option key={i} value={s} className="bg-gray-800 text-white">{s}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="relative">
-                  <MessageSquare className="absolute left-4 top-4 text-yellow-400 h-5 w-5 z-10" />
-                  <textarea
-                    name="details"
-                    placeholder="Tell us about your project..."
-                    value={formData.details}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full pl-12 pr-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-200 resize-none"
-                  />
-                </div>
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-yellow-500 via-yellow-600 to-amber-600 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 group flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? "Booking..." : "get free quote"}
-                  <Send className="h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideUp {
-          from {
-            transform: translateY(20px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
-        }
-
-        .animate-slideUp {
-          animation: slideUp 0.3s ease-out;
-        }
-      `}</style>
-    </>
+    <span
+      className={className}
+      style={sizeStyle}
+      aria-hidden
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
   );
 };
 
-export default HeroSection;
+// ─── Step Indicator ───────────────────────────────────────────────────────────
+const StepIndicator: React.FC<{ step: number }> = ({ step }) => {
+  const steps = ["Area", "Issue", "Details"];
+  return (
+    <div className="flex items-center gap-0">
+      {steps.map((label, i) => {
+        const s = i + 1;
+        const done = step > s;
+        const active = step === s;
+        return (
+          <React.Fragment key={label}>
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-500",
+                  !done && !active && "bg-slate-100 text-slate-400 border border-slate-200",
+                  !done && active && "bg-white text-slate-800 border-2"
+                )}
+                style={
+                  done
+                    ? {
+                        background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})`,
+                        color: "#1a1207",
+                        boxShadow: `0 0 14px rgba(201,168,76,0.4)`,
+                      }
+                    : active
+                    ? { borderColor: GOLD }
+                    : {}
+                }
+              >
+                {done ? "✓" : s}
+              </div>
+              <span
+                className={cn(
+                  "text-[10px] font-bold tracking-widest uppercase transition-all duration-300 hidden sm:block",
+                  done ? "opacity-100" : active ? "text-slate-700" : "text-slate-400"
+                )}
+                style={done ? { color: GOLD } : {}}
+              >
+                {label}
+              </span>
+            </div>
+            {i < 2 && (
+              <div
+                className={cn("w-10 h-px mx-2 transition-all duration-500", !done && "bg-slate-200")}
+                style={done ? { background: GOLD, opacity: 0.6 } : {}}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
+// ─── Category Card ────────────────────────────────────────────────────────────
+const CategoryCard: React.FC<{
+  item: IssueNode;
+  selected: IssueNode | null;
+  onSelect: (item: IssueNode) => void;
+}> = ({ item, selected, onSelect }) => {
+  const isSel = selected?.id === item.id;
+
+  if (item.emergency) {
+    return (
+      <button
+        onClick={() => onSelect(item)}
+        aria-pressed={isSel}
+        className={cn(
+          "group relative flex flex-col items-center gap-3 pt-6 pb-5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
+          isSel
+            ? "border-red-400 bg-red-50 shadow-lg"
+            : "border-red-200 bg-red-50/30 hover:border-red-300 hover:shadow-md hover:-translate-y-0.5"
+        )}
+      >
+        <div className="absolute top-3 right-3 flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+        </div>
+        <div
+          className={cn(
+            "rounded-xl flex items-center justify-center transition-all",
+            isSel ? "bg-red-100" : "bg-red-50/80"
+          )}
+          style={{ width: 72, height: 72 }}
+        >
+          <Icon name={item.icon} size={48} className="text-red-500" />
+        </div>
+        <span className="text-[11.5px] font-bold text-center text-red-500 leading-snug">
+          {item.label}
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onSelect(item)}
+      aria-pressed={isSel}
+      className={cn(
+        "group relative flex flex-col items-center gap-3 pt-6 pb-5 px-3 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
+        !isSel &&
+          "border-slate-100 bg-white hover:shadow-md hover:-translate-y-0.5 hover:border-[rgba(201,168,76,0.3)]"
+      )}
+      style={
+        isSel
+          ? {
+              borderColor: GOLD,
+              background: GOLD_TRANSPARENT,
+              boxShadow: `0 8px 24px rgba(201,168,76,0.15)`,
+              transform: "translateY(-2px)",
+            }
+          : {}
+      }
+    >
+      {isSel && (
+        <div
+          className="absolute top-3 right-3 w-3 h-3 rounded-full shadow"
+          style={{ background: GOLD }}
+        />
+      )}
+      <div
+        className={cn(
+          "rounded-xl flex items-center justify-center transition-all duration-200",
+          isSel ? "bg-[rgba(201,168,76,0.18)]" : "bg-slate-50 group-hover:bg-amber-50/60"
+        )}
+        style={{ width: 72, height: 72 }}
+      >
+        <Icon
+          name={item.icon}
+          size={48}
+          className={cn(
+            "transition-all duration-200",
+            isSel ? "text-[#c9a84c]" : "text-slate-500 group-hover:text-amber-600/70"
+          )}
+        />
+      </div>
+      <span
+        className={cn(
+          "text-[11.5px] font-semibold text-center leading-snug px-0.5 transition-colors",
+          isSel ? "text-slate-900" : "text-slate-600"
+        )}
+      >
+        {item.label}
+      </span>
+    </button>
+  );
+};
+
+// ─── Leaf Row ─────────────────────────────────────────────────────────────────
+const LeafRow: React.FC<{
+  items: IssueNode[];
+  selected: IssueNode | null;
+  onSelect: (item: IssueNode) => void;
+}> = ({ items, selected, onSelect }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {items.map((item, idx) => {
+      const isSel = selected?.id === item.id;
+      return (
+        <button
+          key={item.id}
+          onClick={() => onSelect(item)}
+          aria-pressed={isSel}
+          className={cn(
+            "group flex items-center gap-3.5 px-4 py-4 rounded-2xl border text-left transition-all duration-150 focus:outline-none",
+            isSel
+              ? "shadow-md -translate-y-0.5"
+              : "border-slate-100 bg-white hover:border-[rgba(201,168,76,0.3)] hover:shadow-sm"
+          )}
+          style={isSel ? { borderColor: GOLD, background: GOLD_TRANSPARENT } : {}}
+        >
+          <span
+            className={cn(
+              "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold transition-all",
+              !isSel && "bg-slate-50 text-slate-400 group-hover:bg-amber-50"
+            )}
+            style={
+              isSel
+                ? {
+                    background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})`,
+                    color: "#1a1207",
+                  }
+                : {}
+            }
+          >
+            {idx + 1}
+          </span>
+          <span
+            className={cn(
+              "flex-1 text-[13.5px] font-medium leading-snug transition-colors",
+              isSel ? "text-slate-900" : "text-slate-600"
+            )}
+          >
+            {item.label}
+          </span>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="shrink-0 transition-all"
+            style={{ color: isSel ? GOLD : "rgba(0,0,0,0.2)" }}
+          >
+            {isSel ? (
+              <>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </>
+            ) : (
+              <polyline points="9 18 15 12 9 6" />
+            )}
+          </svg>
+        </button>
+      );
+    })}
+  </div>
+);
+
+// ─── Emergency Modal ──────────────────────────────────────────────────────────
+const EmergencyModal: React.FC<{ node: IssueNode; onClose: () => void }> = ({
+  node,
+  onClose,
+}) => (
+  <div
+    className="fixed inset-0 z-[200] flex items-center justify-center p-5"
+    style={{ background: "rgba(10,8,4,0.7)", backdropFilter: "blur(4px)" }}
+  >
+    <div
+      className="w-full max-w-sm rounded-3xl p-8 text-center bg-white shadow-2xl border"
+      style={{ borderColor: "rgba(0,0,0,0.06)" }}
+    >
+      <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-red-50">
+        <svg
+          width="36"
+          height="36"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="rgb(185,60,60)"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
+      <h2 className="text-xl font-bold text-slate-900 mb-2">{node.label}</h2>
+      <p className="text-[13px] leading-relaxed mb-7 text-slate-600">
+        This needs{" "}
+        <span className="text-red-600 font-semibold">immediate attention</span>. Please
+        don&apos;t wait — call our emergency line right now and we&apos;ll be there fast.
+      </p>
+      <a
+        href="tel:02074736366"
+        className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl font-bold text-sm text-white mb-3"
+        style={{
+          background: "linear-gradient(135deg,#c0392b,#b91c1c)",
+          boxShadow: "0 8px 24px rgba(185,28,28,0.3)",
+        }}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+        </svg>
+        Call Emergency: 020 7473 6366
+      </a>
+      <button
+        onClick={onClose}
+        className="w-full py-3 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
+      >
+        ← Go back
+      </button>
+    </div>
+  </div>
+);
+
+// ─── Success Screen ───────────────────────────────────────────────────────────
+const SuccessScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => (
+  <div className="flex flex-col items-center py-16 px-6 text-center">
+    <div
+      className="w-28 h-28 rounded-full flex items-center justify-center mb-6 shadow-lg"
+      style={{ background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})` }}
+    >
+      <svg
+        width="52"
+        height="52"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+        <polyline points="22 4 12 14.01 9 11.01" />
+      </svg>
+    </div>
+    <h2
+      className="text-3xl font-bold text-slate-900 mb-3"
+      style={{ fontFamily: "Georgia, serif" }}
+    >
+      You&apos;re all set! 🎉
+    </h2>
+    <p className="text-[14px] leading-relaxed max-w-sm text-slate-600 mb-2">
+      Your maintenance request has been received. Our friendly team will review it and reach
+      out shortly to schedule a convenient visit.
+    </p>
+    <p className="text-[12px] text-slate-400 mb-10">
+      Typical response time: within 24 hours on weekdays
+    </p>
+    <button
+      onClick={onReset}
+      className="text-[12px] font-semibold px-5 py-2.5 rounded-full border transition-all hover:shadow-sm"
+      style={{ borderColor: GOLD_BORDER, color: GOLD }}
+    >
+      + Submit another request
+    </button>
+  </div>
+);
+
+// ─── Main Wizard ──────────────────────────────────────────────────────────────
+export default function MaintenanceWizard() {
+  const tree = useMemo(() => issueTree as IssueNode[], []);
+
+  const [stack, setStack] = useState<StackFrame[]>([
+    { items: tree, selected: null, label: "Where is the issue?" },
+  ]);
+  const [step, setStep] = useState(1);
+  const [emergencyNode, setEmergencyNode] = useState<IssueNode | null>(null);
+  const [formData, setFormData] = useState<FormData>({
+    fullName: "",
+    telephone: "",
+    details: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [search, setSearch] = useState("");
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [showTopShadow, setShowTopShadow] = useState(false);
+  const [showBottomShadow, setShowBottomShadow] = useState(false);
+
+  const depth = stack.length - 1;
+  const current = stack[depth];
+  const selectedPath = stack
+    .map((s) => s.selected)
+    .filter((n): n is IssueNode => n !== null);
+  const isLeafLevel =
+    current.items.length > 0 &&
+    current.items.every((n) => !n.children?.length);
+  const showSearch = step !== 3 && current.items.length > 8;
+  const filtered = useMemo(
+    () =>
+      search.trim()
+        ? current.items.filter((n) =>
+            n.label.toLowerCase().includes(search.toLowerCase())
+          )
+        : current.items,
+    [search, current.items]
+  );
+
+  const scrollTop = useCallback(() => {
+    setTimeout(() => {
+      if (bodyRef.current) bodyRef.current.scrollTop = 0;
+    }, 20);
+  }, []);
+
+  const updateShadows = useCallback(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    setShowTopShadow(el.scrollTop > 8);
+    setShowBottomShadow(el.scrollTop + el.clientHeight < el.scrollHeight - 8);
+  }, []);
+
+  useEffect(() => {
+    updateShadows();
+  }, [step, filtered.length, stack.length, updateShadows]);
+
+  // Pre-fetch next level icons when hovering over a category
+  const prefetchChildren = useCallback((node: IssueNode) => {
+    if (node.children) {
+      node.children.forEach((c) => { if (c.icon) loadSvg(c.icon); });
+    }
+  }, []);
+
+  const pick = useCallback(
+    (node: IssueNode) => {
+      if (node.emergency) {
+        setEmergencyNode(node);
+        return;
+      }
+      setSearch("");
+      const updated = stack.map((e, i) =>
+        i === depth ? { ...e, selected: node } : e
+      );
+      if (node.children?.length) {
+        setStack([
+          ...updated,
+          { items: node.children, selected: null, label: node.label },
+        ]);
+        setStep(2);
+      } else {
+        setStack(updated);
+        setStep(3);
+      }
+      scrollTop();
+    },
+    [stack, depth, scrollTop]
+  );
+
+  const goToDepth = useCallback(
+    (d: number) => {
+      setSearch("");
+      setStack(
+        stack
+          .slice(0, d + 1)
+          .map((e, i) => (i === d ? { ...e, selected: null } : e))
+      );
+      setStep(d === 0 ? 1 : 2);
+      scrollTop();
+    },
+    [stack, scrollTop]
+  );
+
+  const goBack = useCallback(() => {
+    setSearch("");
+    if (step === 3) {
+      setStep(depth > 0 ? 2 : 1);
+      return;
+    }
+    if (depth === 0) return;
+    goToDepth(depth - 1);
+  }, [step, depth, goToDepth]);
+
+  const reset = useCallback(() => {
+    setSearch("");
+    setStack([{ items: tree, selected: null, label: "Where is the issue?" }]);
+    setStep(1);
+    scrollTop();
+  }, [tree, scrollTop]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!formData.fullName || !formData.telephone) return;
+    setLoading(true);
+    await new Promise<void>((r) => setTimeout(r, 1400));
+    setLoading(false);
+    setSubmitted(true);
+  }, [formData.fullName, formData.telephone]);
+
+  const handleFullReset = useCallback(() => {
+    setSubmitted(false);
+    reset();
+    setFormData({ fullName: "", telephone: "", details: "" });
+  }, [reset]);
+
+  const showBack = step > 1 || depth > 0;
+  const gridCols =
+    depth === 0
+      ? "grid-cols-3 sm:grid-cols-4 lg:grid-cols-5"
+      : "grid-cols-3 sm:grid-cols-4";
+
+  const headerCopy: Record<number, { h: string; sub: string }> = {
+    1: {
+      h: "Hello! What needs attention? 👋",
+      sub: "Don't worry — we've got you covered. Just pick the area where the problem is and we'll take care of the rest.",
+    },
+    2: {
+      h: isLeafLevel
+        ? "Great, now narrow it down a bit"
+        : "Getting closer — one more step!",
+      sub: isLeafLevel
+        ? "Choose the option that best describes what you're seeing."
+        : "Let's find exactly the right category for your issue.",
+    },
+    3: {
+      h: "Almost done — just your details!",
+      sub: "We only need a couple of things so we can get back to you and arrange a visit at a time that suits you.",
+    },
+  };
+  const hc = headerCopy[step] ?? headerCopy[2];
+
+  if (submitted) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-6 pt-16"
+        style={{
+          background: "linear-gradient(160deg,#faf8f3 0%,#f2ede2 100%)",
+          fontFamily: "'Georgia', serif",
+        }}
+      >
+        <div
+          className="w-full max-w-4xl rounded-3xl overflow-hidden"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow: "0 40px 100px rgba(10,10,4,0.09)",
+          }}
+        >
+          <div className="px-8 pt-7 pb-5 flex items-center justify-between border-b border-slate-100">
+            <StepIndicator step={4} />
+          </div>
+          <SuccessScreen onReset={handleFullReset} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-4 sm:p-6 pt-10 sm:pt-16 relative overflow-hidden"
+      style={{
+        background: "linear-gradient(160deg,#faf8f3 0%,#f2ede2 100%)",
+        fontFamily: "'Georgia', serif",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
+        .wiz-body { font-family: 'DM Sans', sans-serif; }
+        .wiz-serif { font-family: 'DM Serif Display', Georgia, serif; }
+        .wizard-scroll { scrollbar-width: thin; scrollbar-color: ${GOLD} transparent; }
+        .wizard-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .wizard-scroll::-webkit-scrollbar-thumb { background: ${GOLD}; border-radius: 999px; }
+        .wizard-scroll::-webkit-scrollbar-track { background: transparent; }
+      `}</style>
+
+      {emergencyNode && (
+        <EmergencyModal
+          node={emergencyNode}
+          onClose={() => setEmergencyNode(null)}
+        />
+      )}
+
+      <div className="relative z-10 w-full max-w-6xl flex flex-col gap-5 wiz-body">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-2.5 w-2.5">
+              <span
+                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                style={{ background: GOLD }}
+              />
+              <span
+                className="relative inline-flex rounded-full h-2.5 w-2.5"
+                style={{ background: GOLD }}
+              />
+            </div>
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-500">
+              Maintenance Request
+            </span>
+          </div>
+          <a
+            href="tel:02074736366"
+            className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors"
+          >
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            Emergency: 020 7473 6366
+          </a>
+        </div>
+
+        {/* Main card */}
+        <div
+          className="flex flex-col rounded-3xl overflow-hidden relative"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,0,0,0.05)",
+            boxShadow: "0 32px 100px rgba(10,10,4,0.09)",
+            minHeight: 580,
+          }}
+        >
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Step indicator */}
+            <div className="px-7 pt-6 pb-5 flex items-center justify-between border-b border-slate-100">
+              <StepIndicator step={step} />
+              {selectedPath.length > 0 && (
+                <button
+                  onClick={reset}
+                  title="Start over"
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Panel header */}
+            <div className="px-7 pt-5 pb-3">
+              <div className="flex items-start gap-3">
+                {showBack && (
+                  <button
+                    onClick={goBack}
+                    className="shrink-0 mt-1 flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-100"
+                  >
+                    <svg
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Back
+                  </button>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h2 className="wiz-serif text-xl leading-tight text-slate-900">
+                    {hc.h}
+                  </h2>
+                  <p className="text-[12.5px] mt-1 text-slate-500 leading-relaxed">
+                    {hc.sub}
+                  </p>
+                </div>
+              </div>
+
+              {/* Breadcrumbs */}
+              {selectedPath.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                  {selectedPath.map((node, i) => (
+                    <React.Fragment key={node.id}>
+                      {i > 0 && (
+                        <svg
+                          width="9"
+                          height="9"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke={GOLD}
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      )}
+                      <button
+                        onClick={() => goToDepth(i)}
+                        className="text-[10.5px] font-semibold rounded-full px-2.5 py-1 transition-all hover:opacity-80"
+                        style={{
+                          background: GOLD_TRANSPARENT,
+                          color: "rgba(34,34,34,0.7)",
+                          border: `1px solid ${GOLD_BORDER}`,
+                        }}
+                      >
+                        {node.label}
+                      </button>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Search */}
+            {showSearch && (
+              <div className="px-7 pb-3">
+                <div className="relative">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={GOLD}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search for an issue…"
+                    className="w-full rounded-xl pl-10 pr-9 py-2.5 text-[13px] placeholder-slate-400 outline-none transition-all"
+                    style={{
+                      background: "rgba(0,0,0,0.03)",
+                      border: "1px solid rgba(0,0,0,0.05)",
+                      color: "rgba(34,34,34,0.85)",
+                    }}
+                  />
+                  {search && (
+                    <button
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="h-px mx-7 bg-slate-100" />
+
+            {/* Body */}
+            <div className="relative flex-1">
+              <div
+                aria-hidden
+                style={{
+                  pointerEvents: "none",
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 24,
+                  background:
+                    "linear-gradient(to bottom, rgba(0,0,0,0.04), transparent)",
+                  opacity: showTopShadow ? 1 : 0,
+                  transition: "opacity 180ms",
+                  zIndex: 10,
+                }}
+              />
+              <div
+                aria-hidden
+                style={{
+                  pointerEvents: "none",
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: 28,
+                  background:
+                    "linear-gradient(to top, rgba(0,0,0,0.04), transparent)",
+                  opacity: showBottomShadow ? 1 : 0,
+                  transition: "opacity 180ms",
+                  zIndex: 10,
+                }}
+              />
+
+              <div
+                ref={bodyRef}
+                onScroll={updateShadows}
+                className="overflow-y-auto overscroll-contain px-7 py-6 wizard-scroll"
+                style={{ maxHeight: 640 }}
+              >
+                {step !== 3 ? (
+                  <>
+                    {isLeafLevel ? (
+                      <LeafRow
+                        items={filtered}
+                        selected={current.selected}
+                        onSelect={pick}
+                      />
+                    ) : (
+                      <div className={`grid gap-3 ${gridCols}`}>
+                        {filtered.map((item) => (
+                          <CategoryCard
+                            key={item.id}
+                            item={item}
+                            selected={current.selected}
+                            onSelect={pick}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {filtered.length === 0 && (
+                      <div className="flex flex-col items-center py-16 gap-3 text-slate-400">
+                        <svg
+                          width="32"
+                          height="32"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="m21 21-4.35-4.35" />
+                          <line x1="8" y1="11" x2="14" y2="11" />
+                        </svg>
+                        <span className="text-sm font-semibold">
+                          No results for &quot;{search}&quot;
+                        </span>
+                        <span className="text-[12px]">
+                          Try a different search term
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  /* Contact form */
+                  <div className="w-full lg:max-w-none max-w-2xl">
+                    {/* Issue recap */}
+                    {selectedPath.length > 0 && (
+                      <div
+                        className="rounded-2xl px-5 py-4 mb-6"
+                        style={{
+                          background: GOLD_TRANSPARENT,
+                          border: `1px solid ${GOLD_BORDER}`,
+                        }}
+                      >
+                        <p className="text-[9px] font-black uppercase tracking-widest mb-2.5 text-slate-500">
+                          You&apos;re reporting
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {selectedPath.map((n, i) => (
+                            <React.Fragment key={n.id}>
+                              {i > 0 && (
+                                <svg
+                                  width="9"
+                                  height="9"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke={GOLD}
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                              )}
+                              <span
+                                className="inline-flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-3 py-1"
+                                style={{
+                                  background: "rgba(201,168,76,0.14)",
+                                  color: "rgba(34,34,34,0.8)",
+                                }}
+                              >
+                                <Icon
+                                  name={n.icon}
+                                  size={16}
+                                  className="text-amber-700/70"
+                                />
+                                {n.label}
+                              </span>
+                            </React.Fragment>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                      {(
+                        [
+                          {
+                            key: "fullName" as const,
+                            label: "Your full name",
+                            type: "text",
+                            placeholder: "e.g. Sarah Johnson",
+                            hasIcon: false,
+                          },
+                          {
+                            key: "telephone" as const,
+                            label: "Best phone number",
+                            type: "tel",
+                            placeholder: "e.g. 020 7473 6366",
+                            hasIcon: true,
+                          },
+                        ] as const
+                      ).map(({ key, label, type, placeholder, hasIcon }) => (
+                        <div key={key}>
+                          <label className="block text-[9.5px] font-black uppercase tracking-widest mb-2 text-slate-500">
+                            {label}
+                          </label>
+                          <div className="relative">
+                            {hasIcon && (
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke={GOLD}
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                              >
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+                              </svg>
+                            )}
+                            <input
+                              type={type}
+                              placeholder={placeholder}
+                              value={formData[key]}
+                              onChange={(e) =>
+                                setFormData((p) => ({
+                                  ...p,
+                                  [key]: e.target.value,
+                                }))
+                              }
+                              className={`w-full rounded-xl py-3.5 text-[14px] outline-none transition-all ${
+                                hasIcon ? "pl-10 pr-4" : "px-4"
+                              }`}
+                              style={{
+                                background: "white",
+                                border: "1.5px solid rgba(0,0,0,0.07)",
+                                caretColor: GOLD,
+                                color: "rgba(34,34,34,0.9)",
+                                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.03)",
+                                fontFamily: "'DM Sans', sans-serif",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <label className="block text-[9.5px] font-black uppercase tracking-widest mb-2 text-slate-500">
+                        Additional details{" "}
+                        <span className="normal-case font-normal text-slate-400">
+                          (optional but helpful!)
+                        </span>
+                      </label>
+                      <textarea
+                        rows={5}
+                        value={formData.details}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, details: e.target.value }))
+                        }
+                        placeholder="Tell us anything that might help — when it started, how bad it is, any access notes, preferred times…"
+                        className="w-full rounded-xl px-4 py-3.5 text-[13.5px] outline-none transition-all resize-none"
+                        style={{
+                          background: "white",
+                          border: "1.5px solid rgba(0,0,0,0.07)",
+                          caretColor: GOLD,
+                          color: "rgba(34,34,34,0.9)",
+                          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.03)",
+                          fontFamily: "'DM Sans', sans-serif",
+                        }}
+                      />
+                    </div>
+
+                    <div className="mt-5">
+                      <button
+                        onClick={handleSubmit}
+                        disabled={
+                          loading ||
+                          !formData.fullName ||
+                          !formData.telephone
+                        }
+                        className="flex items-center justify-center gap-2.5 w-full py-4 rounded-2xl font-bold text-[14px] transition-all"
+                        style={{
+                          background:
+                            !loading &&
+                            formData.fullName &&
+                            formData.telephone
+                              ? `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`
+                              : "rgba(201,168,76,0.18)",
+                          color:
+                            !loading &&
+                            formData.fullName &&
+                            formData.telephone
+                              ? "#1a1207"
+                              : "rgba(34,34,34,0.4)",
+                          boxShadow:
+                            !loading &&
+                            formData.fullName &&
+                            formData.telephone
+                              ? "0 8px 32px rgba(201,168,76,0.25)"
+                              : "none",
+                          cursor:
+                            loading ||
+                            !formData.fullName ||
+                            !formData.telephone
+                              ? "not-allowed"
+                              : "pointer",
+                        }}
+                      >
+                        {loading ? (
+                          <>
+                            <svg
+                              className="animate-spin w-4 h-4"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                            >
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeDasharray="42"
+                                strokeDashoffset="20"
+                                opacity=".25"
+                              />
+                              <path
+                                d="M4 12a8 8 0 018-8"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            Sending your request…
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              width="15"
+                              height="15"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <line x1="22" y1="2" x2="11" y2="13" />
+                              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg>
+                            Send my request — it&apos;s quick!
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-center text-[11px] mt-3 text-slate-400">
+                      We&apos;ll only use your number to arrange your visit. No spam, ever. 🤝
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <p className="text-center text-[11.5px] font-medium text-slate-500">
+          Gas leak, fire, or flooding?{" "}
+          <a
+            href="tel:02074736366"
+            className="underline underline-offset-2 font-semibold"
+            style={{ color: GOLD }}
+          >
+            Call 020 7473 6366
+          </a>{" "}
+          immediately — available 24/7
+        </p>
+      </div>
+    </div>
+  );
+}
+
