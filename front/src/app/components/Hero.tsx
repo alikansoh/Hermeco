@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import issueTree from "./issues.json";
@@ -46,11 +46,41 @@ function loadSvg(iconName: string): Promise<string> {
   const p = fetch(`/icons/${iconName}.svg`)
     .then((r) => (r.ok ? r.text() : ""))
     .then((text) => {
-      // Strip width/height attrs, normalise stroke colour to currentColor
-      const cleaned = text
-        .replace(/\s*(width|height)="[^"]*"/g, "")
-        .replace(/stroke="(?!none)[^"]*"/g, 'stroke="currentColor"')
-        .replace(/fill="(?!none|currentColor)[^"]*"/g, 'fill="currentColor"');
+      if (!text.trim()) return "";
+
+      // 1. Set width/height to 100% so the parent <span> controls the size.
+      //    Mobile Safari collapses SVGs that have no explicit dimensions or
+      //    that have fixed px dimensions inside a flex container.
+      let cleaned = text
+        .replace(/(<svg[^>]*)\s+width="[^"]*"/i, '$1 width="100%"')
+        .replace(/(<svg[^>]*)\s+height="[^"]*"/i, '$1 height="100%"');
+
+      // 2. If width/height attributes are missing entirely, inject them.
+      if (!/width="/i.test(cleaned)) {
+        cleaned = cleaned.replace(/(<svg)/i, '$1 width="100%" height="100%"');
+      }
+
+      // 3. Normalise colours to currentColor so Tailwind text-* classes work.
+      //    - Replace any explicit stroke colour (but keep stroke="none")
+      //    - Replace any explicit fill colour (but keep fill="none")
+      //    - Handle both quoted hex (#xxx / #xxxxxx) and named colours
+      cleaned = cleaned
+        .replace(/stroke="(?!none\b)(?!currentColor\b)[^"]+"/gi, 'stroke="currentColor"')
+        .replace(/fill="(?!none\b)(?!currentColor\b)[^"]+"/gi, 'fill="currentColor"')
+        // Also handle inline style="fill:#000" or style="stroke:#000"
+        .replace(/style="[^"]*fill\s*:\s*(?!none)[^;}"]+;?[^"]*"/gi, (m) =>
+          m.replace(/fill\s*:\s*(?!none)[^;}"]+/gi, "fill:currentColor")
+        )
+        .replace(/style="[^"]*stroke\s*:\s*(?!none)[^;}"]+;?[^"]*"/gi, (m) =>
+          m.replace(/stroke\s*:\s*(?!none)[^;}"]+/gi, "stroke:currentColor")
+        );
+
+      // 4. Remove any <style> blocks (svgrepo sometimes embeds class-based fills)
+      cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+
+      // 5. Remove class attributes (leftover from stripped <style> blocks)
+      cleaned = cleaned.replace(/\s+class="[^"]*"/gi, "");
+
       svgCache.set(iconName, cleaned);
       return cleaned;
     })
@@ -109,15 +139,16 @@ const Icon: React.FC<{
   const sizeStyle: React.CSSProperties = {
     width: size,
     height: size,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
+    minWidth: size,
+    minHeight: size,
+    display: "block",
     flexShrink: 0,
+    overflow: "visible",
+    lineHeight: 0,
     ...style,
   };
 
   if (!svg) {
-    // Invisible placeholder — same size, no layout shift
     return <span style={sizeStyle} aria-hidden />;
   }
 
@@ -1213,4 +1244,3 @@ export default function MaintenanceWizard() {
     </div>
   );
 }
-

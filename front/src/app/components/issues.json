@@ -3,7 +3,7 @@
     {
       "id": "bathroom",
       "label": "Bathroom & Toilet",
-      "icon": "bathroom",
+      "icon": "bathroom.svg",
       "color": "blue",
       "children": [
         {
