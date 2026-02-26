@@ -49,7 +49,6 @@ function loadSvg(iconName: string): Promise<string> {
 
       let cleaned = text;
 
-      // 1. Normalise width/height to 100% so the parent wrapper controls the size
       cleaned = cleaned
         .replace(/(<svg[^>]*)\s+width="[^"]*"/i, '$1 width="100%"')
         .replace(/(<svg[^>]*)\s+height="[^"]*"/i, '$1 height="100%"');
@@ -58,23 +57,15 @@ function loadSvg(iconName: string): Promise<string> {
         cleaned = cleaned.replace(/(<svg)/i, '$1 width="100%" height="100%"');
       }
 
-      // 2. Strip ALL explicit fill/stroke colour attributes (keep "none" values).
-      //    This lets fill="currentColor" on the root <svg> cascade everywhere,
-      //    so the icon renders as a solid clean shape in whichever colour the
-      //    parent wrapper sets via its CSS `color` property.
       cleaned = cleaned
         .replace(/\s+stroke="(?!none\b)[^"]*"/gi, "")
         .replace(/\s+fill="(?!none\b)[^"]*"/gi, "")
-        // Also handle inline style="fill:#xxx" or style="stroke:#xxx"
         .replace(/style="([^"]*)fill\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"')
         .replace(/style="([^"]*)stroke\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"');
 
-      // 3. Remove embedded <style> blocks and leftover class attributes
       cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
       cleaned = cleaned.replace(/\s+class="[^"]*"/gi, "");
 
-      // 4. Inject fill="currentColor" onto the root <svg> element so every
-      //    child path inherits the colour set by the wrapper's CSS `color`.
       cleaned = cleaned.replace(/(<svg)([^>]*>)/i, '$1 fill="currentColor"$2');
 
       svgCache.set(iconName, cleaned);
@@ -108,13 +99,6 @@ function preloadAllIcons(nodes: IssueNode[]) {
 preloadAllIcons(issueTree as IssueNode[]);
 
 // ─── Icon Component ───────────────────────────────────────────────────────────
-// KEY FIX: renders the FULL cached SVG string via dangerouslySetInnerHTML on a
-// wrapper <span>.  We no longer extract inner paths and re-wrap them — that old
-// approach applied wrong defaults (fill="none", stroke="currentColor") that
-// broke any icon using filled shapes instead of strokes.
-//
-// The `color` prop sets the CSS `color` on the wrapper span; because the SVG
-// root now has fill="currentColor", every path inherits it automatically.
 const Icon: React.FC<{
   name?: string;
   size?: number;
@@ -148,13 +132,11 @@ const Icon: React.FC<{
     minHeight: size,
     flexShrink: 0,
     lineHeight: 0,
-    // CSS color → currentColor → SVG fill inherits it
     color,
     ...style,
   };
 
   if (!svgHtml) {
-    // Same-size invisible placeholder to prevent layout shift while loading
     return <span style={wrapperStyle} className={className} aria-hidden />;
   }
 
@@ -250,7 +232,6 @@ const CategoryCard: React.FC<{
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
         </div>
-        {/* Larger icon container: 88×88 px */}
         <div
           className={cn(
             "rounded-2xl flex items-center justify-center transition-all",
@@ -293,7 +274,6 @@ const CategoryCard: React.FC<{
           style={{ background: GOLD }}
         />
       )}
-      {/* Larger icon container: 88×88 px */}
       <div
         className={cn(
           "rounded-2xl flex items-center justify-center transition-all duration-200",
@@ -303,11 +283,6 @@ const CategoryCard: React.FC<{
         )}
         style={{ width: 88, height: 88 }}
       >
-        {/*
-          Color:
-          - Selected  → gold accent
-          - Default   → clean near-black (#1e293b) — crisp, legible, no blue tint
-        */}
         <Icon name={item.icon} size={54} color={isSel ? GOLD : "#1e293b"} />
       </div>
       <span
@@ -527,6 +502,9 @@ export default function MaintenanceWizard() {
   const [showTopShadow, setShowTopShadow] = useState(false);
   const [showBottomShadow, setShowBottomShadow] = useState(false);
 
+  // Track touch start Y position for mobile scroll chaining
+  const touchStartYRef = useRef<number>(0);
+
   const depth = stack.length - 1;
   const current = stack[depth];
   const selectedPath = stack
@@ -563,6 +541,7 @@ export default function MaintenanceWizard() {
     updateShadows();
   }, [step, filtered.length, stack.length, updateShadows]);
 
+  // ─── Desktop wheel scroll chaining ───────────────────────────────────────
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     const el = bodyRef.current;
     if (!el) return;
@@ -572,6 +551,34 @@ export default function MaintenanceWizard() {
       e.preventDefault();
       window.scrollBy({ top: e.deltaY, behavior: "auto" });
     }
+  }, []);
+
+  // ─── Mobile touch scroll chaining ────────────────────────────────────────
+  // Record the Y position when the finger first lands
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  }, []);
+
+  // While dragging: if the inner scroll is at a boundary and the swipe
+  // direction continues past it, allow the outer page to scroll instead.
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const el = bodyRef.current;
+    if (!el) return;
+
+    const deltaY = touchStartYRef.current - e.touches[0].clientY; // positive = scrolling down
+    const atTop = el.scrollTop <= 0;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+
+    // Inner element can still scroll — do nothing, let it handle the event.
+    if ((deltaY > 0 && !atBottom) || (deltaY < 0 && !atTop)) return;
+
+    // Inner element is at a boundary: let the outer page scroll.
+    // We stop propagation of the inner scroll but allow the outer touch to
+    // proceed by NOT calling e.preventDefault(), which leaves the event
+    // bubbling up to the window/body.
+    // However we must also prevent the inner div from trying to scroll (which
+    // would just freeze there), so we stop it from consuming the event.
+    e.stopPropagation();
   }, []);
 
   const pick = useCallback(
@@ -645,7 +652,6 @@ export default function MaintenanceWizard() {
   }, [reset]);
 
   const showBack = step > 1 || depth > 0;
-  // Fewer columns → each card is wider and more prominent
   const gridCols =
     depth === 0
       ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
@@ -958,8 +964,16 @@ export default function MaintenanceWizard() {
                 ref={bodyRef}
                 onScroll={updateShadows}
                 onWheel={handleWheel}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
                 className="overflow-y-auto px-7 py-6 wizard-scroll"
-                style={{ maxHeight: 640 }}
+                style={{
+                  maxHeight: 640,
+                  // KEY FIX: tells the browser to contain scroll within this
+                  // element and only chain to parent when boundaries are reached.
+                  // This is the modern CSS-native solution for nested scroll on mobile.
+                  overscrollBehavior: "contain",
+                }}
               >
                 {step !== 3 ? (
                   <>
