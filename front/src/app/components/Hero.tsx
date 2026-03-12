@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import issueTree from "./issues.json";
 
 interface IssueNode {
@@ -146,6 +146,7 @@ const SuccessScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => (
 // ─── Main Wizard ──────────────────────────────────────────────────────────────
 export default function MaintenanceWizard() {
   const tree = useMemo(() => issueTree as IssueNode[], []);
+  const topRef = useRef<HTMLDivElement>(null);
 
   const [stack, setStack] = useState<IssueNode[][]>([tree]);
   const [breadcrumbs, setBreadcrumbs] = useState<IssueNode[]>([]);
@@ -163,17 +164,23 @@ export default function MaintenanceWizard() {
     requestAnimationFrame(() => requestAnimationFrame(() => setSlide("idle")));
   };
 
+  // Scroll only to the top of the wizard component, not the page
+  const scrollToTop = () => {
+    topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handlePick = useCallback((node: IssueNode) => {
     if (node.emergency) { setEmergencyNode(node); return; }
     if (node.children?.length) {
       setStack(s => [...s, node.children!]);
       setBreadcrumbs(b => [...b, node]);
       animateIn("in-right");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // No scroll — stay where the user is
     } else {
       setBreadcrumbs(b => [...b, node]);
       setPhase("form");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Only scroll to top of wizard when moving to the form
+      scrollToTop();
     }
   }, []);
 
@@ -182,13 +189,14 @@ export default function MaintenanceWizard() {
       setPhase("pick");
       setBreadcrumbs(b => b.slice(0, -1));
       animateIn("in-left");
+      // No scroll on back
       return;
     }
     if (stack.length > 1) {
       setStack(s => s.slice(0, -1));
       setBreadcrumbs(b => b.slice(0, -1));
       animateIn("in-left");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      // No scroll on back
     }
   }, [phase, stack.length]);
 
@@ -199,7 +207,7 @@ export default function MaintenanceWizard() {
     setFormData({ fullName: "", telephone: "", details: "" });
     setSlide("in-left");
     requestAnimationFrame(() => requestAnimationFrame(() => setSlide("idle")));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   }, [tree]);
 
   const handleSubmit = useCallback(async () => {
@@ -244,6 +252,9 @@ export default function MaintenanceWizard() {
       {emergencyNode && <EmergencyModal node={emergencyNode} onClose={() => setEmergencyNode(null)} />}
 
       {/* ── Top bar ── */}
+      {/* Scroll anchor — sits above the sticky bar so scrollIntoView lands cleanly */}
+      <div ref={topRef} style={{ position: "relative", top: -80 }} />
+
       <div className="sticky top-0 z-50 flex items-center justify-between px-5 py-3.5"
         style={{ background: "rgba(250,250,247,0.95)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${GOLD_BORDER}` }}>
         <span style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#64748b" }}>
