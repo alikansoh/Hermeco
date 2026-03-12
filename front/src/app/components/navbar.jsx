@@ -25,13 +25,11 @@ import {
   Trees,
 } from "lucide-react";
 
-const CONTACT_BAR_HEIGHT = 40; // px, adjust to match your actual py-2 + text size
-
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false); // Fix hydration mismatch
+  const [hasMounted, setHasMounted] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -74,8 +72,7 @@ const Navbar = () => {
     { name: "About", href: "/about", icon: Users },
     { name: "Contact", href: "/contact", icon: Phone },
     { name: "FAQ", href: "/faq", icon: HelpCircle },
-    { name: "Blog", href: "/blog", icon:BookOpen },
-
+    { name: "Blog", href: "/blog", icon: BookOpen },
   ];
 
   const services = [
@@ -90,45 +87,31 @@ const Navbar = () => {
   return (
     <>
       {/* Top Contact Bar */}
-      <div
-        className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white py-2 px-4 text-sm fixed w-full top-0 left-0 z-50"
-        style={hasMounted ? { height: `${CONTACT_BAR_HEIGHT}px`, minHeight: `${CONTACT_BAR_HEIGHT}px` } : {}}
-      >
-        <div className={`max-w-7xl mx-auto flex flex-wrap items-center justify-between${hasMounted ? " h-full" : ""}`}>
-          <div className={`flex items-center gap-6${hasMounted ? " h-full" : ""}`}>
-            <Link
-              href="tel:07300825333"
-              className="flex items-center gap-2 hover:underline"
-              prefetch={false}
-            >
+      <div className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-white py-2 px-4 text-sm w-full">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between h-full">
+          <div className="flex items-center gap-6">
+            <Link href="tel:07300825333" className="flex items-center gap-2 hover:underline" prefetch={false}>
               <Phone className="h-4 w-4" />
               <span>07300825333</span>
             </Link>
-            <Link
-              href="mailto:info@Hermeco.co.uk"
-              className="flex items-center gap-2 hover:underline"
-              prefetch={false}
-            >
+            <Link href="mailto:info@Hermeco.co.uk" className="flex items-center gap-2 hover:underline" prefetch={false}>
               <Mail className="h-4 w-4" />
               <span>info@Hermeco.co.uk</span>
             </Link>
             <div className="hidden lg:flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span>7 Hill Close,London,NW2</span>
+              <span>7 Hill Close, London, NW2</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Navbar */}
-      <nav
-        className={`fixed w-full left-0 z-50 transition-all duration-500 ${
-          hasMounted && isScrolled
-            ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
-            : "bg-white shadow-md"
-        }`}
-        style={hasMounted ? { top: `${CONTACT_BAR_HEIGHT}px` } : {}}
-      >
+      <nav className={`w-full transition-all duration-500 ${
+        hasMounted && isScrolled
+          ? "bg-white/95 backdrop-blur-xl shadow-lg border-b border-gray-100"
+          : "bg-white shadow-md"
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-32 lg:h-40">
             {/* Logo */}
@@ -170,7 +153,7 @@ const Navbar = () => {
 
                     {/* Desktop Dropdown */}
                     {item.hasDropdown && (
-                      <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-yellow-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-60">
+                      <div className="absolute top-full left-0 mt-3 w-72 bg-white rounded-2xl shadow-xl border border-yellow-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-80">
                         <div className="p-4 grid gap-2">
                           {services.map((service, index) => {
                             const ServiceIcon = service.icon;
@@ -212,7 +195,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {hasMounted && isOpen && (
-          <div className="lg:hidden absolute left-0 right-0 bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 shadow-xl z-40 transition-all duration-300">
+          <div className="lg:hidden w-full bg-gradient-to-b from-gray-50 to-white border-t border-gray-100 shadow-xl z-40">
             <div className="px-4 py-6 space-y-3 max-h-[80vh] overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -303,15 +286,9 @@ const Navbar = () => {
                 );
               })}
             </div>
-            <div
-              className="absolute z-30"
-              onClick={() => setIsOpen(false)}
-            />
           </div>
         )}
       </nav>
-      {/* Spacer to prevent content being hidden behind fixed nav and contact bar */}
-      <div style={{ height: `${CONTACT_BAR_HEIGHT + 128}px` }} className="w-full"></div>
     </>
   );
 };

@@ -179,7 +179,7 @@
     {
       "id": "exterior",
       "label": "Exterior & Garden",
-      "icon": "Trees",
+      "icon": "garden",
       "color": "green",
       "children": [
         { "id": "exterior-fence", "label": "Fence / Gate", "icon": "SquareDashedBottom" },
@@ -191,8 +191,8 @@
     {
       "id": "laundry",
       "label": "Laundry",
-      "icon": "WashingMachine",
-      "color": "violet",
+      "icon": "laundry",
+      "color": "",
       "children": [
         { "id": "laundry-washing-machine", "label": "Washing machine", "icon": "WashingMachine" },
         { "id": "laundry-tumble-dryer", "label": "Tumble dryer", "icon": "Wind" },
@@ -203,13 +203,13 @@
     {
       "id": "furniture",
       "label": "Furniture",
-      "icon": "Sofa",
+      "icon": "fur",
       "color": "brown"
     },
     {
       "id": "electricity",
       "label": "Electricity",
-      "icon": "Zap",
+      "icon": "elec",
       "color": "yellow",
       "children": [
         { "id": "electricity-power-cut", "label": "Power cut / Tripping", "icon": "ZapOff" },
@@ -220,7 +220,7 @@
     {
       "id": "hot-water",
       "label": "Hot Water",
-      "icon": "Thermometer",
+      "icon": "hot",
       "color": "rose",
       "children": [
         { "id": "hot-water-none", "label": "No hot water", "icon": "ThermometerSnowflake" },
@@ -231,7 +231,7 @@
     {
       "id": "alarms",
       "label": "Alarms & Detectors",
-      "icon": "Bell",
+      "icon": "fire-alarm",
       "color": "purple",
       "children": [
         { "id": "alarm-beeping", "label": "Beeping / Chirping", "icon": "Volume2" },
@@ -242,7 +242,7 @@
     {
       "id": "pests",
       "label": "Pests & Vermin",
-      "icon": "Bug",
+      "icon": "mouse",
       "color": "lime",
       "children": [
         { "id": "pests-mice", "label": "Mice / Rats", "icon": "Mouse" },
@@ -253,7 +253,7 @@
     {
       "id": "roof",
       "label": "Roof",
-      "icon": "Home",
+      "icon": "roof",
       "color": "stone",
       "children": [
         { "id": "roof-leaking", "label": "Leaking roof", "icon": "CloudRain" },
@@ -262,72 +262,48 @@
         { "id": "roof-other", "label": "Other", "icon": "MoreHorizontal" }
       ]
     },
-    {
-      "id": "communal",
-      "label": "Communal Areas",
-      "icon": "Users",
-      "color": "indigo"
-    },
+   
     {
       "id": "audiovisual",
       "label": "Audiovisual",
-      "icon": "Tv",
+      "icon": "audio",
       "color": "slate"
     },
     {
       "id": "utility-meters",
       "label": "Utility Meters",
-      "icon": "Gauge",
+      "icon": "meter",
       "color": "teal"
     },
     {
       "id": "internet",
       "label": "Internet",
-      "icon": "Wifi",
+      "icon": "internet",
       "color": "blue"
     },
     {
       "id": "stairs",
       "label": "Stairs",
-      "icon": "MoveUp",
+      "icon": "stairs",
       "color": "zinc"
     },
-    {
-      "id": "property-services",
-      "label": "Property Services",
-      "icon": "Settings",
-      "color": "gray"
-    },
+   
     {
       "id": "air-conditioning",
       "label": "Air Conditioning",
-      "icon": "AirVent",
+      "icon": "air-conditioning",
       "color": "cyan"
     },
     {
       "id": "other-general",
       "label": "Other",
-      "icon": "CircleHelp",
+      "icon": "other",
       "color": "gray"
     },
     {
       "id": "smell-gas",
       "label": "Smell of Gas",
-      "icon": "AlertTriangle",
-      "color": "red",
-      "emergency": true
-    },
-    {
-      "id": "smell-oil",
-      "label": "Smell of Oil",
-      "icon": "AlertTriangle",
-      "color": "red",
-      "emergency": true
-    },
-    {
-      "id": "fire",
-      "label": "Fire",
-      "icon": "Flame",
+      "icon": "gas",
       "color": "red",
       "emergency": true
     }

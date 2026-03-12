@@ -1,22 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import issueTree from "./issues.json";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 interface IssueNode {
   id: string;
   label: string;
   icon?: string;
-  color?: string;
   emergency?: boolean;
   children?: IssueNode[];
-}
-
-interface StackFrame {
-  items: IssueNode[];
-  selected: IssueNode | null;
-  label: string;
 }
 
 interface FormData {
@@ -25,412 +17,91 @@ interface FormData {
   details: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const GOLD = "#c9a84c";
-const GOLD_LIGHT = "#e8c96a";
-const GOLD_TRANSPARENT = "rgba(201,168,76,0.12)";
-const GOLD_BORDER = "rgba(201,168,76,0.25)";
+const GOLD = "#B8933A";
+const GOLD_LIGHT = "#D4AA55";
+const GOLD_TRANSPARENT = "rgba(184,147,58,0.10)";
+const GOLD_BORDER = "rgba(184,147,58,0.28)";
 
-const cn = (...classes: (string | false | null | undefined)[]) =>
-  classes.filter(Boolean).join(" ");
-
-// ─── SVG Preload Cache ────────────────────────────────────────────────────────
+// ─── SVG Cache ────────────────────────────────────────────────────────────────
 const svgCache = new Map<string, string>();
 const svgPromises = new Map<string, Promise<string>>();
 
 function loadSvg(iconName: string): Promise<string> {
   if (svgCache.has(iconName)) return Promise.resolve(svgCache.get(iconName)!);
   if (svgPromises.has(iconName)) return svgPromises.get(iconName)!;
-
   const p = fetch(`/icons/${iconName}.svg`)
     .then((r) => (r.ok ? r.text() : ""))
     .then((text) => {
       if (!text.trim()) return "";
-
-      let cleaned = text;
-
-      cleaned = cleaned
+      let c = text
         .replace(/(<svg[^>]*)\s+width="[^"]*"/i, '$1 width="100%"')
         .replace(/(<svg[^>]*)\s+height="[^"]*"/i, '$1 height="100%"');
-
-      if (!/width="/i.test(cleaned)) {
-        cleaned = cleaned.replace(/(<svg)/i, '$1 width="100%" height="100%"');
-      }
-
-      cleaned = cleaned
+      if (!/width="/i.test(c)) c = c.replace(/(<svg)/i, '$1 width="100%" height="100%"');
+      c = c
         .replace(/\s+stroke="(?!none\b)[^"]*"/gi, "")
         .replace(/\s+fill="(?!none\b)[^"]*"/gi, "")
         .replace(/style="([^"]*)fill\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"')
-        .replace(/style="([^"]*)stroke\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"');
-
-      cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-      cleaned = cleaned.replace(/\s+class="[^"]*"/gi, "");
-
-      cleaned = cleaned.replace(/(<svg)([^>]*>)/i, '$1 fill="currentColor"$2');
-
-      svgCache.set(iconName, cleaned);
-      return cleaned;
+        .replace(/style="([^"]*)stroke\s*:\s*(?!none)[^;}"]+;?([^"]*)"/gi, 'style="$1$2"')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/\s+class="[^"]*"/gi, "")
+        .replace(/(<svg)([^>]*>)/i, '$1 fill="currentColor"$2');
+      svgCache.set(iconName, c);
+      return c;
     })
-    .catch(() => {
-      svgCache.set(iconName, "");
-      return "";
-    });
-
+    .catch(() => { svgCache.set(iconName, ""); return ""; });
   svgPromises.set(iconName, p);
   return p;
 }
 
-function collectIcons(nodes: IssueNode[]): string[] {
-  const names: string[] = [];
+function preloadAllIcons(nodes: IssueNode[]) {
   const walk = (list: IssueNode[]) => {
-    for (const n of list) {
-      if (n.icon) names.push(n.icon);
-      if (n.children) walk(n.children);
-    }
+    for (const n of list) { if (n.icon) loadSvg(n.icon); if (n.children) walk(n.children); }
   };
   walk(nodes);
-  return [...new Set(names)];
 }
-
-function preloadAllIcons(nodes: IssueNode[]) {
-  collectIcons(nodes).forEach(loadSvg);
-}
-
 preloadAllIcons(issueTree as IssueNode[]);
 
-// ─── Icon Component ───────────────────────────────────────────────────────────
-const Icon: React.FC<{
-  name?: string;
-  size?: number;
-  className?: string;
-  style?: React.CSSProperties;
-  color?: string;
-}> = ({ name, size = 48, className, style, color = "#1e293b" }) => {
+// ─── Icon ─────────────────────────────────────────────────────────────────────
+const Icon: React.FC<{ name?: string; size?: number; color?: string }> = ({ name, size = 32, color = "#475569" }) => {
   const cached = name ? svgCache.get(name) : undefined;
-  const [svgHtml, setSvgHtml] = useState<string>(cached ?? "");
-
+  const [html, setHtml] = useState<string>(cached ?? "");
   useEffect(() => {
     if (!name) return;
-    if (svgCache.has(name)) {
-      setSvgHtml(svgCache.get(name)!);
-      return;
-    }
+    if (svgCache.has(name)) { setHtml(svgCache.get(name)!); return; }
     let cancelled = false;
-    loadSvg(name).then((s) => {
-      if (!cancelled) setSvgHtml(s);
-    });
-    return () => {
-      cancelled = true;
-    };
+    loadSvg(name).then((s) => { if (!cancelled) setHtml(s); });
+    return () => { cancelled = true; };
   }, [name]);
-
-  const wrapperStyle: React.CSSProperties = {
-    display: "block",
-    width: size,
-    height: size,
-    minWidth: size,
-    minHeight: size,
-    flexShrink: 0,
-    lineHeight: 0,
-    color,
-    ...style,
-  };
-
-  if (!svgHtml) {
-    return <span style={wrapperStyle} className={className} aria-hidden />;
-  }
-
   return (
-    <span
-      style={wrapperStyle}
-      className={className}
-      aria-hidden
-      dangerouslySetInnerHTML={{ __html: svgHtml }}
-    />
+    <span aria-hidden style={{ display: "block", width: size, height: size, minWidth: size, flexShrink: 0, color, lineHeight: 0 }}
+      dangerouslySetInnerHTML={html ? { __html: html } : undefined} />
   );
 };
-
-// ─── Step Indicator ───────────────────────────────────────────────────────────
-const StepIndicator: React.FC<{ step: number }> = ({ step }) => {
-  const steps = ["Area", "Issue", "Details"];
-  return (
-    <div className="flex items-center gap-0">
-      {steps.map((label, i) => {
-        const s = i + 1;
-        const done = step > s;
-        const active = step === s;
-        return (
-          <React.Fragment key={label}>
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-500",
-                  !done && !active && "bg-slate-100 text-slate-400 border border-slate-200",
-                  !done && active && "bg-white text-slate-800 border-2"
-                )}
-                style={
-                  done
-                    ? {
-                        background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})`,
-                        color: "#1a1207",
-                        boxShadow: `0 0 14px rgba(201,168,76,0.4)`,
-                      }
-                    : active
-                    ? { borderColor: GOLD }
-                    : {}
-                }
-              >
-                {done ? "✓" : s}
-              </div>
-              <span
-                className={cn(
-                  "text-[10px] font-bold tracking-widest uppercase transition-all duration-300 hidden sm:block",
-                  done ? "opacity-100" : active ? "text-slate-700" : "text-slate-400"
-                )}
-                style={done ? { color: GOLD } : {}}
-              >
-                {label}
-              </span>
-            </div>
-            {i < 2 && (
-              <div
-                className={cn(
-                  "w-10 h-px mx-2 transition-all duration-500",
-                  !done && "bg-slate-200"
-                )}
-                style={done ? { background: GOLD, opacity: 0.6 } : {}}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
-    </div>
-  );
-};
-
-// ─── Category Card ────────────────────────────────────────────────────────────
-const CategoryCard: React.FC<{
-  item: IssueNode;
-  selected: IssueNode | null;
-  onSelect: (item: IssueNode) => void;
-}> = ({ item, selected, onSelect }) => {
-  const isSel = selected?.id === item.id;
-
-  if (item.emergency) {
-    return (
-      <button
-        onClick={() => onSelect(item)}
-        aria-pressed={isSel}
-        className={cn(
-          "group relative flex flex-col items-center gap-4 pt-8 pb-6 px-4 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
-          isSel
-            ? "border-red-400 bg-red-50 shadow-lg"
-            : "border-red-200 bg-red-50/30 hover:border-red-300 hover:shadow-md hover:-translate-y-0.5"
-        )}
-      >
-        <div className="absolute top-3 right-3 flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-60" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-        </div>
-        <div
-          className={cn(
-            "rounded-2xl flex items-center justify-center transition-all",
-            isSel ? "bg-red-100" : "bg-red-50/80"
-          )}
-          style={{ width: 88, height: 88 }}
-        >
-          <Icon name={item.icon} size={54} color="#ef4444" />
-        </div>
-        <span className="text-[12px] font-bold text-center text-red-500 leading-snug">
-          {item.label}
-        </span>
-      </button>
-    );
-  }
-
-  return (
-    <button
-      onClick={() => onSelect(item)}
-      aria-pressed={isSel}
-      className={cn(
-        "group relative flex flex-col items-center gap-4 pt-8 pb-6 px-4 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus:outline-none",
-        !isSel &&
-          "border-slate-100 bg-white hover:shadow-md hover:-translate-y-0.5 hover:border-[rgba(201,168,76,0.3)]"
-      )}
-      style={
-        isSel
-          ? {
-              borderColor: GOLD,
-              background: GOLD_TRANSPARENT,
-              boxShadow: `0 8px 24px rgba(201,168,76,0.15)`,
-              transform: "translateY(-2px)",
-            }
-          : {}
-      }
-    >
-      {isSel && (
-        <div
-          className="absolute top-3 right-3 w-3 h-3 rounded-full shadow"
-          style={{ background: GOLD }}
-        />
-      )}
-      <div
-        className={cn(
-          "rounded-2xl flex items-center justify-center transition-all duration-200",
-          isSel
-            ? "bg-[rgba(201,168,76,0.15)]"
-            : "bg-slate-50 group-hover:bg-amber-50/60"
-        )}
-        style={{ width: 88, height: 88 }}
-      >
-        <Icon name={item.icon} size={54} color={isSel ? GOLD : "#1e293b"} />
-      </div>
-      <span
-        className={cn(
-          "text-[12px] font-semibold text-center leading-snug px-0.5 transition-colors",
-          isSel ? "text-slate-900" : "text-slate-600"
-        )}
-      >
-        {item.label}
-      </span>
-    </button>
-  );
-};
-
-// ─── Leaf Row ─────────────────────────────────────────────────────────────────
-const LeafRow: React.FC<{
-  items: IssueNode[];
-  selected: IssueNode | null;
-  onSelect: (item: IssueNode) => void;
-}> = ({ items, selected, onSelect }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    {items.map((item, idx) => {
-      const isSel = selected?.id === item.id;
-      return (
-        <button
-          key={item.id}
-          onClick={() => onSelect(item)}
-          aria-pressed={isSel}
-          className={cn(
-            "group flex items-center gap-3.5 px-4 py-4 rounded-2xl border text-left transition-all duration-150 focus:outline-none",
-            isSel
-              ? "shadow-md -translate-y-0.5"
-              : "border-slate-100 bg-white hover:border-[rgba(201,168,76,0.3)] hover:shadow-sm"
-          )}
-          style={isSel ? { borderColor: GOLD, background: GOLD_TRANSPARENT } : {}}
-        >
-          <span
-            className={cn(
-              "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-[12px] font-bold transition-all",
-              !isSel && "bg-slate-50 text-slate-400 group-hover:bg-amber-50"
-            )}
-            style={
-              isSel
-                ? {
-                    background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})`,
-                    color: "#1a1207",
-                  }
-                : {}
-            }
-          >
-            {idx + 1}
-          </span>
-          <span
-            className={cn(
-              "flex-1 text-[13.5px] font-medium leading-snug transition-colors",
-              isSel ? "text-slate-900" : "text-slate-600"
-            )}
-          >
-            {item.label}
-          </span>
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="shrink-0 transition-all"
-            style={{ color: isSel ? GOLD : "rgba(0,0,0,0.2)" }}
-          >
-            {isSel ? (
-              <>
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </>
-            ) : (
-              <polyline points="9 18 15 12 9 6" />
-            )}
-          </svg>
-        </button>
-      );
-    })}
-  </div>
-);
 
 // ─── Emergency Modal ──────────────────────────────────────────────────────────
-const EmergencyModal: React.FC<{ node: IssueNode; onClose: () => void }> = ({
-  node,
-  onClose,
-}) => (
-  <div
-    className="fixed inset-0 z-[200] flex items-center justify-center p-5"
-    style={{ background: "rgba(10,8,4,0.7)", backdropFilter: "blur(4px)" }}
-  >
-    <div
-      className="w-full max-w-sm rounded-3xl p-8 text-center bg-white shadow-2xl border"
-      style={{ borderColor: "rgba(0,0,0,0.06)" }}
-    >
-      <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-red-50">
-        <svg
-          width="36"
-          height="36"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="rgb(185,60,60)"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
+const EmergencyModal: React.FC<{ node: IssueNode; onClose: () => void }> = ({ node, onClose }) => (
+  <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4"
+    style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}>
+    <div className="w-full max-w-sm rounded-3xl p-8 text-center bg-white shadow-2xl" style={{ fontFamily: "'Outfit', sans-serif" }}>
+      <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-red-50">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#b91c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
         </svg>
       </div>
-      <h2 className="text-xl font-bold text-slate-900 mb-2">{node.label}</h2>
-      <p className="text-[13px] leading-relaxed mb-7 text-slate-600">
-        This needs{" "}
-        <span className="text-red-600 font-semibold">immediate attention</span>. Please
-        don&apos;t wait — call our emergency line right now and we&apos;ll be there fast.
+      <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "18px", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>
+        {node.label}
+      </h2>
+      <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: "14px", lineHeight: 1.7, marginBottom: "24px", color: "#64748b" }}>
+        This needs <span style={{ color: "#dc2626", fontWeight: 600 }}>immediate attention</span>. Call our emergency line now.
       </p>
-      <a
-        href="tel:02074736366"
-        className="flex items-center justify-center gap-2.5 w-full py-4 rounded-xl font-bold text-sm text-white mb-3"
-        style={{
-          background: "linear-gradient(135deg,#c0392b,#b91c1c)",
-          boxShadow: "0 8px 24px rgba(185,28,28,0.3)",
-        }}
-      >
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-        </svg>
-        Call Emergency: 020 7473 6366
+      <a href="tel:02074736366"
+        className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl mb-3"
+        style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: "15px", color: "white", textDecoration: "none", background: "linear-gradient(135deg,#c0392b,#b91c1c)", boxShadow: "0 8px 24px rgba(185,28,28,0.3)" }}>
+        📞 Call: 020 7473 6366
       </a>
-      <button
-        onClick={onClose}
-        className="w-full py-3 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-      >
+      <button onClick={onClose}
+        style={{ fontFamily: "'Outfit', sans-serif", width: "100%", padding: "12px", borderRadius: "16px", fontSize: "14px", fontWeight: 600, border: "1px solid #e2e8f0", color: "#64748b", background: "white", cursor: "pointer" }}>
         ← Go back
       </button>
     </div>
@@ -439,43 +110,34 @@ const EmergencyModal: React.FC<{ node: IssueNode; onClose: () => void }> = ({
 
 // ─── Success Screen ───────────────────────────────────────────────────────────
 const SuccessScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => (
-  <div className="flex flex-col items-center py-16 px-6 text-center">
-    <div
-      className="w-28 h-28 rounded-full flex items-center justify-center mb-6 shadow-lg"
-      style={{ background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})` }}
-    >
-      <svg
-        width="52"
-        height="52"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <polyline points="22 4 12 14.01 9 11.01" />
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 24px", textAlign: "center", fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{
+      width: "96px", height: "96px", borderRadius: "50%",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      marginBottom: "24px",
+      background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+      boxShadow: "0 12px 32px rgba(184,147,58,0.3)",
+    }}>
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
     </div>
-    <h2
-      className="text-3xl font-bold text-slate-900 mb-3"
-      style={{ fontFamily: "Georgia, serif" }}
-    >
-      You&apos;re all set! 🎉
+    <h2 style={{ fontFamily: "'Outfit', sans-serif", fontSize: "32px", fontWeight: 800, color: "#111009", margin: "0 0 12px", letterSpacing: "-0.03em" }}>
+      All done! 🎉
     </h2>
-    <p className="text-[14px] leading-relaxed max-w-sm text-slate-600 mb-2">
-      Your maintenance request has been received. Our friendly team will review it and reach
-      out shortly to schedule a convenient visit.
+    <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: "15px", lineHeight: 1.75, maxWidth: "320px", color: "#6B6150", margin: "0 0 8px" }}>
+      We&apos;ve received your request and will be in touch shortly to arrange a visit.
     </p>
-    <p className="text-[12px] text-slate-400 mb-10">
-      Typical response time: within 24 hours on weekdays
+    <p style={{ fontFamily: "'Outfit', sans-serif", fontSize: "13px", color: "#9A8E7E", marginBottom: "40px" }}>
+      Response within 24 hours on weekdays
     </p>
-    <button
-      onClick={onReset}
-      className="text-[12px] font-semibold px-5 py-2.5 rounded-full border transition-all hover:shadow-sm"
-      style={{ borderColor: GOLD_BORDER, color: GOLD }}
-    >
+    <button onClick={onReset} style={{
+      fontFamily: "'Outfit', sans-serif",
+      fontSize: "13px", fontWeight: 700,
+      padding: "12px 24px", borderRadius: "100px",
+      border: `2px solid ${GOLD_BORDER}`,
+      color: GOLD, background: "white", cursor: "pointer",
+    }}>
       + Submit another request
     </button>
   </div>
@@ -485,764 +147,363 @@ const SuccessScreen: React.FC<{ onReset: () => void }> = ({ onReset }) => (
 export default function MaintenanceWizard() {
   const tree = useMemo(() => issueTree as IssueNode[], []);
 
-  const [stack, setStack] = useState<StackFrame[]>([
-    { items: tree, selected: null, label: "Where is the issue?" },
-  ]);
-  const [step, setStep] = useState(1);
+  const [stack, setStack] = useState<IssueNode[][]>([tree]);
+  const [breadcrumbs, setBreadcrumbs] = useState<IssueNode[]>([]);
+  const [phase, setPhase] = useState<"pick" | "form" | "done">("pick");
   const [emergencyNode, setEmergencyNode] = useState<IssueNode | null>(null);
-  const [formData, setFormData] = useState<FormData>({
-    fullName: "",
-    telephone: "",
-    details: "",
-  });
+  const [formData, setFormData] = useState<FormData>({ fullName: "", telephone: "", details: "" });
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [search, setSearch] = useState("");
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [showTopShadow, setShowTopShadow] = useState(false);
-  const [showBottomShadow, setShowBottomShadow] = useState(false);
+  const [slide, setSlide] = useState<"in-right" | "in-left" | "idle">("idle");
 
-  // Track touch start Y position for mobile scroll chaining
-  const touchStartYRef = useRef<number>(0);
+  const currentItems = stack[stack.length - 1];
+  const isLeaf = currentItems.every(n => !n.children?.length);
 
-  const depth = stack.length - 1;
-  const current = stack[depth];
-  const selectedPath = stack
-    .map((s) => s.selected)
-    .filter((n): n is IssueNode => n !== null);
-  const isLeafLevel =
-    current.items.length > 0 &&
-    current.items.every((n) => !n.children?.length);
-  const showSearch = step !== 3 && current.items.length > 8;
-  const filtered = useMemo(
-    () =>
-      search.trim()
-        ? current.items.filter((n) =>
-            n.label.toLowerCase().includes(search.toLowerCase())
-          )
-        : current.items,
-    [search, current.items]
-  );
+  const animateIn = (dir: "in-right" | "in-left") => {
+    setSlide(dir);
+    requestAnimationFrame(() => requestAnimationFrame(() => setSlide("idle")));
+  };
 
-  const scrollTop = useCallback(() => {
-    setTimeout(() => {
-      if (bodyRef.current) bodyRef.current.scrollTop = 0;
-    }, 20);
-  }, []);
-
-  const updateShadows = useCallback(() => {
-    const el = bodyRef.current;
-    if (!el) return;
-    setShowTopShadow(el.scrollTop > 8);
-    setShowBottomShadow(el.scrollTop + el.clientHeight < el.scrollHeight - 8);
-  }, []);
-
-  useEffect(() => {
-    updateShadows();
-  }, [step, filtered.length, stack.length, updateShadows]);
-
-  // ─── Desktop wheel scroll chaining ───────────────────────────────────────
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const el = bodyRef.current;
-    if (!el) return;
-    const atTop = el.scrollTop === 0;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) {
-      e.preventDefault();
-      window.scrollBy({ top: e.deltaY, behavior: "auto" });
+  const handlePick = useCallback((node: IssueNode) => {
+    if (node.emergency) { setEmergencyNode(node); return; }
+    if (node.children?.length) {
+      setStack(s => [...s, node.children!]);
+      setBreadcrumbs(b => [...b, node]);
+      animateIn("in-right");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      setBreadcrumbs(b => [...b, node]);
+      setPhase("form");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, []);
 
-  // ─── Mobile touch scroll chaining ────────────────────────────────────────
-  // Record the Y position when the finger first lands
-  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    touchStartYRef.current = e.touches[0].clientY;
-  }, []);
-
-  // While dragging: if the inner scroll is at a boundary and the swipe
-  // direction continues past it, allow the outer page to scroll instead.
-  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const el = bodyRef.current;
-    if (!el) return;
-
-    const deltaY = touchStartYRef.current - e.touches[0].clientY; // positive = scrolling down
-    const atTop = el.scrollTop <= 0;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-
-    // Inner element can still scroll — do nothing, let it handle the event.
-    if ((deltaY > 0 && !atBottom) || (deltaY < 0 && !atTop)) return;
-
-    // Inner element is at a boundary: let the outer page scroll.
-    // We stop propagation of the inner scroll but allow the outer touch to
-    // proceed by NOT calling e.preventDefault(), which leaves the event
-    // bubbling up to the window/body.
-    // However we must also prevent the inner div from trying to scroll (which
-    // would just freeze there), so we stop it from consuming the event.
-    e.stopPropagation();
-  }, []);
-
-  const pick = useCallback(
-    (node: IssueNode) => {
-      if (node.emergency) {
-        setEmergencyNode(node);
-        return;
-      }
-      setSearch("");
-      const updated = stack.map((e, i) =>
-        i === depth ? { ...e, selected: node } : e
-      );
-      if (node.children?.length) {
-        setStack([
-          ...updated,
-          { items: node.children, selected: null, label: node.label },
-        ]);
-        setStep(2);
-      } else {
-        setStack(updated);
-        setStep(3);
-      }
-      scrollTop();
-    },
-    [stack, depth, scrollTop]
-  );
-
-  const goToDepth = useCallback(
-    (d: number) => {
-      setSearch("");
-      setStack(
-        stack
-          .slice(0, d + 1)
-          .map((e, i) => (i === d ? { ...e, selected: null } : e))
-      );
-      setStep(d === 0 ? 1 : 2);
-      scrollTop();
-    },
-    [stack, scrollTop]
-  );
-
-  const goBack = useCallback(() => {
-    setSearch("");
-    if (step === 3) {
-      setStep(depth > 0 ? 2 : 1);
+  const handleBack = useCallback(() => {
+    if (phase === "form") {
+      setPhase("pick");
+      setBreadcrumbs(b => b.slice(0, -1));
+      animateIn("in-left");
       return;
     }
-    if (depth === 0) return;
-    goToDepth(depth - 1);
-  }, [step, depth, goToDepth]);
+    if (stack.length > 1) {
+      setStack(s => s.slice(0, -1));
+      setBreadcrumbs(b => b.slice(0, -1));
+      animateIn("in-left");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [phase, stack.length]);
 
-  const reset = useCallback(() => {
-    setSearch("");
-    setStack([{ items: tree, selected: null, label: "Where is the issue?" }]);
-    setStep(1);
-    scrollTop();
-  }, [tree, scrollTop]);
+  const handleReset = useCallback(() => {
+    setStack([tree]);
+    setBreadcrumbs([]);
+    setPhase("pick");
+    setFormData({ fullName: "", telephone: "", details: "" });
+    setSlide("in-left");
+    requestAnimationFrame(() => requestAnimationFrame(() => setSlide("idle")));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [tree]);
 
   const handleSubmit = useCallback(async () => {
     if (!formData.fullName || !formData.telephone) return;
     setLoading(true);
     await new Promise<void>((r) => setTimeout(r, 1400));
     setLoading(false);
-    setSubmitted(true);
-  }, [formData.fullName, formData.telephone]);
+    setPhase("done");
+  }, [formData]);
 
-  const handleFullReset = useCallback(() => {
-    setSubmitted(false);
-    reset();
-    setFormData({ fullName: "", telephone: "", details: "" });
-  }, [reset]);
-
-  const showBack = step > 1 || depth > 0;
-  const gridCols =
-    depth === 0
-      ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4"
-      : "grid-cols-2 sm:grid-cols-3";
-
-  const headerCopy: Record<number, { h: string; sub: string }> = {
-    1: {
-      h: "Hello! What needs attention? 👋",
-      sub: "Don't worry — we've got you covered. Just pick the area where the problem is and we'll take care of the rest.",
-    },
-    2: {
-      h: isLeafLevel
-        ? "Great, now narrow it down a bit"
-        : "Getting closer — one more step!",
-      sub: isLeafLevel
-        ? "Choose the option that best describes what you're seeing."
-        : "Let's find exactly the right category for your issue.",
-    },
-    3: {
-      h: "Almost done — just your details!",
-      sub: "We only need a couple of things so we can get back to you and arrange a visit at a time that suits you.",
-    },
+  const slideStyle: React.CSSProperties = {
+    transition: slide === "idle" ? "transform 300ms cubic-bezier(0.4,0,0.2,1), opacity 300ms ease" : "none",
+    transform: slide === "idle" ? "translateX(0)" : slide === "in-right" ? "translateX(40px)" : "translateX(-40px)",
+    opacity: slide === "idle" ? 1 : 0,
   };
-  const hc = headerCopy[step] ?? headerCopy[2];
 
-  if (submitted) {
+  const FONT = "'Outfit', sans-serif";
+
+  if (phase === "done") {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center p-6 pt-16"
-        style={{
-          background: "linear-gradient(160deg,#faf8f3 0%,#f2ede2 100%)",
-          fontFamily: "'Georgia', serif",
-        }}
-      >
-        <div
-          className="w-full max-w-4xl rounded-3xl overflow-hidden"
-          style={{
-            background: "white",
-            border: "1px solid rgba(0,0,0,0.05)",
-            boxShadow: "0 40px 100px rgba(10,10,4,0.09)",
-          }}
-        >
-          <div className="px-8 pt-7 pb-5 flex items-center justify-between border-b border-slate-100">
-            <StepIndicator step={4} />
-          </div>
-          <SuccessScreen onReset={handleFullReset} />
+      <div className="min-h-screen flex items-center justify-center p-6"
+        style={{ background: "linear-gradient(160deg,#FAFAF7,#f2ede2)", fontFamily: FONT }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');*{box-sizing:border-box}`}</style>
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+          <SuccessScreen onReset={handleReset} />
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 sm:p-6 pt-10 sm:pt-16 relative overflow-hidden"
-      style={{
-        background: "linear-gradient(160deg,#faf8f3 0%,#f2ede2 100%)",
-        fontFamily: "'Georgia', serif",
-      }}
-    >
+    <div className="min-h-screen" style={{ background: "linear-gradient(160deg,#FAFAF7,#f2ede2)", fontFamily: FONT }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap');
-        .wiz-body { font-family: 'DM Sans', sans-serif; }
-        .wiz-serif { font-family: 'DM Serif Display', Georgia, serif; }
-        .wizard-scroll { scrollbar-width: thin; scrollbar-color: ${GOLD} transparent; }
-        .wizard-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
-        .wizard-scroll::-webkit-scrollbar-thumb { background: ${GOLD}; border-radius: 999px; }
-        .wizard-scroll::-webkit-scrollbar-track { background: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; } body { margin: 0; }
+        .pick-card:hover { transform: translateY(-3px) !important; box-shadow: 0 12px 32px rgba(0,0,0,0.10) !important; border-color: ${GOLD_BORDER} !important; }
+        .pick-card:active { transform: translateY(-1px) scale(0.98) !important; }
+        .leaf-row:hover { background: rgba(184,147,58,0.06) !important; border-color: ${GOLD_BORDER} !important; transform: translateX(3px) !important; }
+        .leaf-row:active { transform: scale(0.99) !important; }
       `}</style>
 
-      {emergencyNode && (
-        <EmergencyModal
-          node={emergencyNode}
-          onClose={() => setEmergencyNode(null)}
-        />
-      )}
+      {emergencyNode && <EmergencyModal node={emergencyNode} onClose={() => setEmergencyNode(null)} />}
 
-      <div className="relative z-10 w-full max-w-6xl flex flex-col gap-5 wiz-body">
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-2.5 w-2.5">
-              <span
-                className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-                style={{ background: GOLD }}
-              />
-              <span
-                className="relative inline-flex rounded-full h-2.5 w-2.5"
-                style={{ background: GOLD }}
-              />
+      {/* ── Top bar ── */}
+      <div className="sticky top-0 z-50 flex items-center justify-between px-5 py-3.5"
+        style={{ background: "rgba(250,250,247,0.95)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${GOLD_BORDER}` }}>
+        <span style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: "#64748b" }}>
+          Maintenance Request
+        </span>
+        <a href="tel:02074736366"
+          className="flex items-center gap-1.5"
+          style={{ fontFamily: FONT, fontSize: "12px", fontWeight: 700, padding: "8px 12px", borderRadius: "100px", color: "#dc2626", background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", textDecoration: "none" }}>
+          📞 020 7473 6366
+        </a>
+      </div>
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 pb-24">
+
+        {/* ── Progress / Nav ── */}
+        <div className="mb-6">
+          {(stack.length > 1 || phase === "form") && (
+            <button onClick={handleBack}
+              className="flex items-center gap-2 mb-4 py-2 px-3 rounded-xl"
+              style={{ fontFamily: FONT, fontSize: "14px", fontWeight: 700, color: "#475569", background: "transparent", border: "1.5px solid transparent", cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#e2e8f0"; (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              Back
+            </button>
+          )}
+
+          {breadcrumbs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-4 px-1">
+              <span style={{ fontFamily: FONT, fontSize: "12px", color: "#94a3b8", fontWeight: 500 }}>You selected:</span>
+              {breadcrumbs.map((b, i) => (
+                <React.Fragment key={b.id}>
+                  {i > 0 && <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>}
+                  <span className="inline-flex items-center gap-1"
+                    style={{ fontFamily: FONT, fontSize: "12px", fontWeight: 700, padding: "4px 10px", borderRadius: "100px", background: GOLD_TRANSPARENT, color: "#7a5c1e", border: `1px solid ${GOLD_BORDER}` }}>
+                    <Icon name={b.icon} size={12} color={GOLD} />
+                    {b.label}
+                  </span>
+                </React.Fragment>
+              ))}
             </div>
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-slate-500">
-              Maintenance Request
-            </span>
+          )}
+
+          {/* Question prompt card */}
+          <div className="bg-white rounded-2xl px-6 py-5 shadow-sm" style={{ border: "1px solid rgba(0,0,0,0.05)" }}>
+            {phase === "pick" && stack.length === 1 && (
+              <>
+                <p style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.18em", color: "#94a3b8", marginBottom: "4px" }}>Step 1 of 3</p>
+                <h1 style={{ fontFamily: FONT, fontSize: "clamp(20px,4vw,26px)", fontWeight: 800, color: "#111009", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                  👋 Where is the problem?
+                </h1>
+                <p style={{ fontFamily: FONT, fontSize: "14px", color: "#6B6150", margin: 0 }}>Tap the area that best matches your issue.</p>
+              </>
+            )}
+            {phase === "pick" && stack.length === 2 && (
+              <>
+                <p style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.18em", color: "#94a3b8", marginBottom: "4px" }}>Step 2 of 3</p>
+                <h1 style={{ fontFamily: FONT, fontSize: "clamp(20px,4vw,26px)", fontWeight: 800, color: "#111009", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                  👇 Now pick the specific issue
+                </h1>
+                <p style={{ fontFamily: FONT, fontSize: "14px", color: "#6B6150", margin: 0 }}>Choose the one that best describes what you&apos;re seeing.</p>
+              </>
+            )}
+            {phase === "pick" && stack.length > 2 && (
+              <>
+                <p style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.18em", color: "#94a3b8", marginBottom: "4px" }}>Almost there!</p>
+                <h1 style={{ fontFamily: FONT, fontSize: "clamp(20px,4vw,26px)", fontWeight: 800, color: "#111009", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                  👇 One more choice
+                </h1>
+                <p style={{ fontFamily: FONT, fontSize: "14px", color: "#6B6150", margin: 0 }}>Pick the option that fits best.</p>
+              </>
+            )}
+            {phase === "form" && (
+              <>
+                <p style={{ fontFamily: FONT, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.18em", color: "#94a3b8", marginBottom: "4px" }}>Step 3 of 3 — Last step!</p>
+                <h1 style={{ fontFamily: FONT, fontSize: "clamp(20px,4vw,26px)", fontWeight: 800, color: "#111009", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+                  ✅ Just your contact details
+                </h1>
+                <p style={{ fontFamily: FONT, fontSize: "14px", color: "#6B6150", margin: 0 }}>We&apos;ll call you to arrange a visit — only takes 30 seconds.</p>
+              </>
+            )}
           </div>
-          <a
-            href="tel:02074736366"
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-red-600 transition-colors"
-          >
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-            Emergency: 020 7473 6366
-          </a>
         </div>
 
-        {/* Main card */}
-        <div
-          className="flex flex-col rounded-3xl overflow-hidden relative"
-          style={{
-            background: "white",
-            border: "1px solid rgba(0,0,0,0.05)",
-            boxShadow: "0 32px 100px rgba(10,10,4,0.09)",
-            minHeight: 580,
-          }}
-        >
-          <div className="flex-1 flex flex-col min-w-0">
-            {/* Step indicator */}
-            <div className="px-7 pt-6 pb-5 flex items-center justify-between border-b border-slate-100">
-              <StepIndicator step={step} />
-              {selectedPath.length > 0 && (
-                <button
-                  onClick={reset}
-                  title="Start over"
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              )}
-            </div>
+        {/* ── Animated content ── */}
+        <div style={slideStyle}>
 
-            {/* Panel header */}
-            <div className="px-7 pt-5 pb-3">
-              <div className="flex items-start gap-3">
-                {showBack && (
-                  <button
-                    onClick={goBack}
-                    className="shrink-0 mt-1 flex items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-100"
-                  >
-                    <svg
-                      width="11"
-                      height="11"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Back
-                  </button>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h2 className="wiz-serif text-xl leading-tight text-slate-900">
-                    {hc.h}
-                  </h2>
-                  <p className="text-[12.5px] mt-1 text-slate-500 leading-relaxed">
-                    {hc.sub}
-                  </p>
-                </div>
-              </div>
-
-              {/* Breadcrumbs */}
-              {selectedPath.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                  {selectedPath.map((node, i) => (
-                    <React.Fragment key={node.id}>
-                      {i > 0 && (
-                        <svg
-                          width="9"
-                          height="9"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={GOLD}
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      )}
-                      <button
-                        onClick={() => goToDepth(i)}
-                        className="text-[10.5px] font-semibold rounded-full px-2.5 py-1 transition-all hover:opacity-80"
-                        style={{
-                          background: GOLD_TRANSPARENT,
-                          color: "rgba(34,34,34,0.7)",
-                          border: `1px solid ${GOLD_BORDER}`,
-                        }}
-                      >
-                        {node.label}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Search */}
-            {showSearch && (
-              <div className="px-7 pb-3">
-                <div className="relative">
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={GOLD}
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search for an issue…"
-                    className="w-full rounded-xl pl-10 pr-9 py-2.5 text-[13px] placeholder-slate-400 outline-none transition-all"
-                    style={{
-                      background: "rgba(0,0,0,0.03)",
-                      border: "1px solid rgba(0,0,0,0.05)",
-                      color: "rgba(34,34,34,0.85)",
-                    }}
-                  />
-                  {search && (
-                    <button
-                      onClick={() => setSearch("")}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18" />
-                        <line x1="6" y1="6" x2="18" y2="18" />
+          {/* PICK PHASE */}
+          {phase === "pick" && (
+            isLeaf ? (
+              <div className="flex flex-col gap-3">
+                {currentItems.map((item) => (
+                  <button key={item.id} onClick={() => handlePick(item)}
+                    className="leaf-row flex items-center gap-4 w-full px-5 py-5 rounded-2xl bg-white text-left transition-all duration-150"
+                    style={{ border: "1.5px solid #f1f5f9", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", cursor: "pointer", fontFamily: FONT }}>
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: GOLD_TRANSPARENT }}>
+                      <Icon name={item.icon} size={26} color={GOLD} />
+                    </div>
+                    <span style={{ flex: 1, fontFamily: FONT, fontSize: "16px", fontWeight: 600, color: "#334155", lineHeight: 1.4 }}>{item.label}</span>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(184,147,58,0.08)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6"/>
                       </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {currentItems.map((item) => (
+                  item.emergency ? (
+                    <button key={item.id} onClick={() => handlePick(item)}
+                      className="pick-card relative flex flex-col items-center gap-3 pt-7 pb-6 px-3 rounded-2xl transition-all duration-200"
+                      style={{ border: "1.5px solid #fecaca", background: "rgba(254,242,242,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.04)", cursor: "pointer", fontFamily: FONT }}>
+                      <div className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                      </div>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-red-50">
+                        <Icon name={item.icon} size={38} color="#ef4444" />
+                      </div>
+                      <span style={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: "#ef4444", textAlign: "center", lineHeight: 1.3 }}>{item.label}</span>
                     </button>
-                  )}
+                  ) : (
+                    <button key={item.id} onClick={() => handlePick(item)}
+                      className="pick-card flex flex-col items-center gap-3 pt-7 pb-6 px-3 rounded-2xl bg-white transition-all duration-200"
+                      style={{ border: "1.5px solid #f1f5f9", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", cursor: "pointer", fontFamily: FONT }}>
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "#f8fafc" }}>
+                        <Icon name={item.icon} size={38} color="#475569" />
+                      </div>
+                      <span style={{ fontFamily: FONT, fontSize: "13px", fontWeight: 600, color: "#475569", textAlign: "center", lineHeight: 1.3, padding: "0 4px" }}>{item.label}</span>
+                      {item.children?.length && (
+                        <span style={{ fontFamily: FONT, fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.10em", padding: "3px 10px", borderRadius: "100px", background: "rgba(184,147,58,0.10)", color: GOLD }}>
+                          {item.children.length} options →
+                        </span>
+                      )}
+                    </button>
+                  )
+                ))}
+              </div>
+            )
+          )}
+
+          {/* FORM PHASE */}
+          {phase === "form" && (
+            <div className="bg-white rounded-3xl shadow-sm" style={{ padding: "24px 24px 32px", border: "1px solid rgba(0,0,0,0.05)" }}>
+
+              {/* Reporting summary */}
+              <div className="flex items-start gap-3 rounded-2xl px-4 py-4 mb-6"
+                style={{ background: GOLD_TRANSPARENT, border: `1.5px solid ${GOLD_BORDER}` }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})` }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </div>
+                <div>
+                  <p style={{ fontFamily: FONT, fontSize: "10px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.18em", color: "#94a3b8", marginBottom: "4px" }}>Reporting</p>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {breadcrumbs.map((n, i) => (
+                      <React.Fragment key={n.id}>
+                        {i > 0 && <span style={{ color: "#cbd5e1", fontSize: "12px" }}>›</span>}
+                        <span style={{ fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: "#334155" }}>{n.label}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="h-px mx-7 bg-slate-100" />
+              {/* Fields */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div>
+                  <label style={{ display: "block", fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "8px" }}>
+                    Your name <span style={{ color: "#f87171" }}>*</span>
+                  </label>
+                  <input type="text" placeholder="e.g. Sarah Johnson" value={formData.fullName}
+                    onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))}
+                    style={{ width: "100%", fontFamily: FONT, fontSize: "16px", fontWeight: 400, color: "#1e293b", background: "#fafafa", border: "2px solid #e2e8f0", borderRadius: "16px", padding: "14px 16px", outline: "none", transition: "border-color 0.15s" }}
+                    onFocus={e => (e.target.style.borderColor = GOLD)}
+                    onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                </div>
 
-            {/* Body */}
-            <div className="relative flex-1">
-              <div
-                aria-hidden
-                style={{
-                  pointerEvents: "none",
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  height: 24,
-                  background: "linear-gradient(to bottom, rgba(0,0,0,0.04), transparent)",
-                  opacity: showTopShadow ? 1 : 0,
-                  transition: "opacity 180ms",
-                  zIndex: 10,
-                }}
-              />
-              <div
-                aria-hidden
-                style={{
-                  pointerEvents: "none",
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 28,
-                  background: "linear-gradient(to top, rgba(0,0,0,0.04), transparent)",
-                  opacity: showBottomShadow ? 1 : 0,
-                  transition: "opacity 180ms",
-                  zIndex: 10,
-                }}
-              />
+                <div>
+                  <label style={{ display: "block", fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "8px" }}>
+                    Best phone number <span style={{ color: "#f87171" }}>*</span>
+                  </label>
+                  <input type="tel" placeholder="e.g. 020 7473 6366" value={formData.telephone}
+                    onChange={(e) => setFormData(p => ({ ...p, telephone: e.target.value }))}
+                    style={{ width: "100%", fontFamily: FONT, fontSize: "16px", fontWeight: 400, color: "#1e293b", background: "#fafafa", border: "2px solid #e2e8f0", borderRadius: "16px", padding: "14px 16px", outline: "none", transition: "border-color 0.15s" }}
+                    onFocus={e => (e.target.style.borderColor = GOLD)}
+                    onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                </div>
 
-              <div
-                ref={bodyRef}
-                onScroll={updateShadows}
-                onWheel={handleWheel}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                className="overflow-y-auto px-7 py-6 wizard-scroll"
-                style={{
-                  maxHeight: 640,
-                  // KEY FIX: tells the browser to contain scroll within this
-                  // element and only chain to parent when boundaries are reached.
-                  // This is the modern CSS-native solution for nested scroll on mobile.
-                  overscrollBehavior: "contain",
-                }}
-              >
-                {step !== 3 ? (
-                  <>
-                    {isLeafLevel ? (
-                      <LeafRow
-                        items={filtered}
-                        selected={current.selected}
-                        onSelect={pick}
-                      />
-                    ) : (
-                      <div className={`grid gap-4 ${gridCols}`}>
-                        {filtered.map((item) => (
-                          <CategoryCard
-                            key={item.id}
-                            item={item}
-                            selected={current.selected}
-                            onSelect={pick}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {filtered.length === 0 && (
-                      <div className="flex flex-col items-center py-16 gap-3 text-slate-400">
-                        <svg
-                          width="32"
-                          height="32"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="11" cy="11" r="8" />
-                          <path d="m21 21-4.35-4.35" />
-                          <line x1="8" y1="11" x2="14" y2="11" />
-                        </svg>
-                        <span className="text-sm font-semibold">
-                          No results for &quot;{search}&quot;
-                        </span>
-                        <span className="text-[12px]">Try a different search term</span>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  /* Contact form */
-                  <div className="w-full lg:max-w-none max-w-2xl">
-                    {/* Issue recap */}
-                    {selectedPath.length > 0 && (
-                      <div
-                        className="rounded-2xl px-5 py-4 mb-6"
-                        style={{
-                          background: GOLD_TRANSPARENT,
-                          border: `1px solid ${GOLD_BORDER}`,
-                        }}
-                      >
-                        <p className="text-[9px] font-black uppercase tracking-widest mb-2.5 text-slate-500">
-                          You&apos;re reporting
-                        </p>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {selectedPath.map((n, i) => (
-                            <React.Fragment key={n.id}>
-                              {i > 0 && (
-                                <svg
-                                  width="9"
-                                  height="9"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke={GOLD}
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="9 18 15 12 9 6" />
-                                </svg>
-                              )}
-                              <span
-                                className="inline-flex items-center gap-1.5 text-[12px] font-semibold rounded-full px-3 py-1"
-                                style={{
-                                  background: "rgba(201,168,76,0.14)",
-                                  color: "rgba(34,34,34,0.8)",
-                                }}
-                              >
-                                <Icon name={n.icon} size={16} color="#92400e" />
-                                {n.label}
-                              </span>
-                            </React.Fragment>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div>
+                  <label style={{ display: "block", fontFamily: FONT, fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "8px" }}>
+                    Extra details <span style={{ fontFamily: FONT, fontWeight: 400, color: "#94a3b8" }}>(optional)</span>
+                  </label>
+                  <textarea rows={4} value={formData.details}
+                    onChange={(e) => setFormData(p => ({ ...p, details: e.target.value }))}
+                    placeholder="When did it start? How bad is it? Any preferred times for a visit?"
+                    style={{ width: "100%", fontFamily: FONT, fontSize: "16px", fontWeight: 400, color: "#1e293b", background: "#fafafa", border: "2px solid #e2e8f0", borderRadius: "16px", padding: "14px 16px", outline: "none", resize: "none", lineHeight: 1.6, transition: "border-color 0.15s" }}
+                    onFocus={e => (e.target.style.borderColor = GOLD)}
+                    onBlur={e => (e.target.style.borderColor = "#e2e8f0")} />
+                </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-                      {(
-                        [
-                          {
-                            key: "fullName" as const,
-                            label: "Your full name",
-                            type: "text",
-                            placeholder: "e.g. Sarah Johnson",
-                            hasIcon: false,
-                          },
-                          {
-                            key: "telephone" as const,
-                            label: "Best phone number",
-                            type: "tel",
-                            placeholder: "e.g. 020 7473 6366",
-                            hasIcon: true,
-                          },
-                        ] as const
-                      ).map(({ key, label, type, placeholder, hasIcon }) => (
-                        <div key={key}>
-                          <label className="block text-[9.5px] font-black uppercase tracking-widest mb-2 text-slate-500">
-                            {label}
-                          </label>
-                          <div className="relative">
-                            {hasIcon && (
-                              <svg
-                                width="13"
-                                height="13"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke={GOLD}
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                              >
-                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.77 2.5h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                              </svg>
-                            )}
-                            <input
-                              type={type}
-                              placeholder={placeholder}
-                              value={formData[key]}
-                              onChange={(e) =>
-                                setFormData((p) => ({ ...p, [key]: e.target.value }))
-                              }
-                              className={`w-full rounded-xl py-3.5 text-[14px] outline-none transition-all ${
-                                hasIcon ? "pl-10 pr-4" : "px-4"
-                              }`}
-                              style={{
-                                background: "white",
-                                border: "1.5px solid rgba(0,0,0,0.07)",
-                                caretColor: GOLD,
-                                color: "rgba(34,34,34,0.9)",
-                                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.03)",
-                                fontFamily: "'DM Sans', sans-serif",
-                              }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <button onClick={handleSubmit}
+                  disabled={loading || !formData.fullName || !formData.telephone}
+                  className="flex items-center justify-center gap-2.5 w-full rounded-2xl mt-2"
+                  style={{
+                    fontFamily: FONT, fontWeight: 700, fontSize: "16px",
+                    padding: "18px",
+                    background: formData.fullName && formData.telephone && !loading
+                      ? `linear-gradient(135deg,${GOLD},${GOLD_LIGHT})` : "rgba(184,147,58,0.15)",
+                    color: formData.fullName && formData.telephone && !loading ? "#111009" : "rgba(0,0,0,0.3)",
+                    boxShadow: formData.fullName && formData.telephone && !loading ? "0 8px 32px rgba(184,147,58,0.3)" : "none",
+                    cursor: loading || !formData.fullName || !formData.telephone ? "not-allowed" : "pointer",
+                    border: "none",
+                    transition: "all 0.2s",
+                  }}>
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="42" strokeDashoffset="20" opacity=".3"/>
+                        <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
+                      </svg>
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                      </svg>
+                      Send my request
+                    </>
+                  )}
+                </button>
 
-                    <div>
-                      <label className="block text-[9.5px] font-black uppercase tracking-widest mb-2 text-slate-500">
-                        Additional details{" "}
-                        <span className="normal-case font-normal text-slate-400">
-                          (optional but helpful!)
-                        </span>
-                      </label>
-                      <textarea
-                        rows={5}
-                        value={formData.details}
-                        onChange={(e) =>
-                          setFormData((p) => ({ ...p, details: e.target.value }))
-                        }
-                        placeholder="Tell us anything that might help — when it started, how bad it is, any access notes, preferred times…"
-                        className="w-full rounded-xl px-4 py-3.5 text-[13.5px] outline-none transition-all resize-none"
-                        style={{
-                          background: "white",
-                          border: "1.5px solid rgba(0,0,0,0.07)",
-                          caretColor: GOLD,
-                          color: "rgba(34,34,34,0.9)",
-                          boxShadow: "inset 0 1px 3px rgba(0,0,0,0.03)",
-                          fontFamily: "'DM Sans', sans-serif",
-                        }}
-                      />
-                    </div>
-
-                    <div className="mt-5">
-                      <button
-                        onClick={handleSubmit}
-                        disabled={loading || !formData.fullName || !formData.telephone}
-                        className="flex items-center justify-center gap-2.5 w-full py-4 rounded-2xl font-bold text-[14px] transition-all"
-                        style={{
-                          background:
-                            !loading && formData.fullName && formData.telephone
-                              ? `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`
-                              : "rgba(201,168,76,0.18)",
-                          color:
-                            !loading && formData.fullName && formData.telephone
-                              ? "#1a1207"
-                              : "rgba(34,34,34,0.4)",
-                          boxShadow:
-                            !loading && formData.fullName && formData.telephone
-                              ? "0 8px 32px rgba(201,168,76,0.25)"
-                              : "none",
-                          cursor:
-                            loading || !formData.fullName || !formData.telephone
-                              ? "not-allowed"
-                              : "pointer",
-                        }}
-                      >
-                        {loading ? (
-                          <>
-                            <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                              <circle
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                strokeDasharray="42"
-                                strokeDashoffset="20"
-                                opacity=".25"
-                              />
-                              <path
-                                d="M4 12a8 8 0 018-8"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            Sending your request…
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              width="15"
-                              height="15"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <line x1="22" y1="2" x2="11" y2="13" />
-                              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                            </svg>
-                            Send my request — it&apos;s quick!
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <p className="text-center text-[11px] mt-3 text-slate-400">
-                      We&apos;ll only use your number to arrange your visit. No spam, ever. 🤝
-                    </p>
-                  </div>
-                )}
+                <p style={{ fontFamily: FONT, textAlign: "center", fontSize: "12px", color: "#94a3b8", margin: 0 }}>
+                  No spam. We&apos;ll only call to arrange your visit. 🤝
+                </p>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}
-        <p className="text-center text-[11.5px] font-medium text-slate-500">
-          Gas leak, fire, or flooding?{" "}
-          <a
-            href="tel:02074736366"
-            className="underline underline-offset-2 font-semibold"
-            style={{ color: GOLD }}
-          >
+        <p style={{ fontFamily: FONT, textAlign: "center", fontSize: "13px", color: "#6B6150", marginTop: "40px" }}>
+          Gas leak, fire or flood?{" "}
+          <a href="tel:02074736366" style={{ fontFamily: FONT, fontWeight: 700, color: GOLD, textDecoration: "underline", textUnderlineOffset: "2px" }}>
             Call 020 7473 6366
           </a>{" "}
-          immediately — available 24/7
+          — available 24/7
         </p>
       </div>
     </div>
