@@ -175,7 +175,7 @@ export default function MaintenanceWizard() {
       setStack(s => [...s, node.children!]);
       setBreadcrumbs(b => [...b, node]);
       animateIn("in-right");
-      // No scroll — stay where the user is
+      scrollToTop();
     } else {
       setBreadcrumbs(b => [...b, node]);
       setPhase("form");
@@ -189,14 +189,14 @@ export default function MaintenanceWizard() {
       setPhase("pick");
       setBreadcrumbs(b => b.slice(0, -1));
       animateIn("in-left");
-      // No scroll on back
+      scrollToTop();
       return;
     }
     if (stack.length > 1) {
       setStack(s => s.slice(0, -1));
       setBreadcrumbs(b => b.slice(0, -1));
       animateIn("in-left");
-      // No scroll on back
+      scrollToTop();
     }
   }, [phase, stack.length]);
 
